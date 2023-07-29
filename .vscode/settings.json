@@ -1,0 +1,24 @@
+{
+  "cSpell.words": [
+    "blocksize",
+    "bytesize",
+    "cmarkup",
+    "Colored",
+    "fcntl",
+    "Hashset",
+    "indicatif",
+    "libc",
+    "multispace",
+    "RDONLY",
+    "RUSR",
+    "rustix",
+    "setfd",
+    "stylesheet",
+    "testfile",
+    "vals"
+  ],
+  "rust-analyzer.linkedProjects": [
+    "./Cargo.toml",
+    "./Cargo.toml"
+  ]
+}
