@@ -88,14 +88,20 @@ fn main() {
         "
         x { foreground: red; styles: bold }
         g { foreground: green }
-        r { foreground: magenta }
+        r { foreground: cyan }
         ",
     )
     .unwrap();
 
-    println!("{}", cmarkup!(template, "Cycles {}, ", args.cycles));
-    println!("{}", cmarkup!(template, "Block Size {}, ", args.block_size));
-    println!("{}", cmarkup!(template, "File Size {}, ", args.file_size));
+    println!("{}", cmarkup!(template, "Cycles <r>{}</r>, ", args.cycles));
+    println!(
+        "{}",
+        cmarkup!(template, "Block Size <r>{}</r>, ", args.block_size)
+    );
+    println!(
+        "{}",
+        cmarkup!(template, "File Size <r>{}</r>, ", args.file_size)
+    );
     println!();
 
     let runs: Vec<Run> = modes
