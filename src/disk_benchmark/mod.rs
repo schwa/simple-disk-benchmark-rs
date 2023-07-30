@@ -157,12 +157,18 @@ impl DiskBenchmark for File {
 #[cfg(target_os = "linux")]
 impl DiskBenchmark for File {
     fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
-        File::options()
-            .create(true)
-            .read(true)
-            .write(true)
-            .open(&path)
-            .map_err(|e| e.into())
+        log::info!("Opening using posix::open");
+        unsafe {
+            let fd = libc::open(
+                path.as_os_str().as_bytes().as_ptr() as *const u8,
+                libc::O_CREAT | libc::O_RDWR | libc::O_DIRECT,
+                0o644,
+            );
+            if fd == -1 {
+                return Err(std::io::Error::last_os_error().into());
+            }
+            Ok(File::from_raw_fd(fd))
+        }
     }
 
     fn set_nocache(&self) -> Result<()> {
