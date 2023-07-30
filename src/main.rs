@@ -84,7 +84,7 @@ fn main() {
         args.mode.clone()
     };
 
-    let template = Template::stylesheet(
+    let style_sheet = StyleSheet::parse(
         "
         x { foreground: red; styles: bold }
         g { foreground: green }
@@ -93,14 +93,17 @@ fn main() {
     )
     .expect("Failed to parse stylesheet.");
 
-    println!("{}", cmarkup!(template, "Cycles <r>{}</r>, ", args.cycles));
     println!(
         "{}",
-        cmarkup!(template, "Block Size <r>{}</r>, ", args.block_size)
+        cmarkup!(style_sheet, "Cycles <r>{}</r>, ", args.cycles)
     );
     println!(
         "{}",
-        cmarkup!(template, "File Size <r>{}</r>, ", args.file_size)
+        cmarkup!(style_sheet, "Block Size <r>{}</r>, ", args.block_size)
+    );
+    println!(
+        "{}",
+        cmarkup!(style_sheet, "File Size <r>{}</r>, ", args.file_size)
     );
     println!();
 
@@ -110,7 +113,7 @@ fn main() {
         .collect();
 
     for run in runs.iter() {
-        run.display_result(&template);
+        run.display_result(&style_sheet);
     }
 }
 
@@ -152,7 +155,7 @@ impl Run {
         Ok(Self { mode, measurements })
     }
 
-    fn display_result(&self, template: &Template) {
+    fn display_result(&self, style_sheet: &StyleSheet) {
         let timings = self
             .measurements
             .iter()
@@ -165,11 +168,11 @@ impl Run {
         let max = max(&timings);
 
         println!();
-        println!("{}", cmarkup!(template, "Mode: <x>{}</x>", self.mode));
+        println!("{}", cmarkup!(style_sheet, "Mode: <x>{}</x>", self.mode));
         println!(
             "{}",
             cmarkup!(
-                template,
+                style_sheet,
                 "Mean: <g>{}/s</g>, Medium: <g>{}/s</g>, Standard Deviation: <r>{}/s</r>",
                 ByteSize(mean as u64),
                 ByteSize(median as u64),
@@ -179,7 +182,7 @@ impl Run {
         println!(
             "{}",
             cmarkup!(
-                template,
+                style_sheet,
                 "Min: <g>{}/s</g>, Max: <r>{}/s</r>",
                 ByteSize(min as u64),
                 ByteSize(max as u64)

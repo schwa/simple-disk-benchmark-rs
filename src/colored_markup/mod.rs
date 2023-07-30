@@ -115,12 +115,12 @@ impl Style {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Template<'a> {
+pub struct StyleSheet<'a> {
     styles: HashMap<&'a str, Style>,
 }
 
-impl<'a> Default for Template<'a> {
-    fn default() -> Template<'a> {
+impl<'a> Default for StyleSheet<'a> {
+    fn default() -> StyleSheet<'a> {
         let styles = vec![
             ("bold", Style::new(Some(vec![Styles::Bold]), None, None)),
             ("em", Style::new(Some(vec![Styles::Italic]), None, None)),
@@ -129,35 +129,35 @@ impl<'a> Default for Template<'a> {
                 Style::new(Some(vec![Styles::Strikethrough]), None, None),
             ),
         ];
-        Template::new(&styles)
+        StyleSheet::new(&styles)
     }
 }
 
-impl<'a> Template<'a> {
-    fn new(styles: &[(&'a str, Style)]) -> Template<'a> {
+impl<'a> StyleSheet<'a> {
+    fn new(styles: &[(&'a str, Style)]) -> StyleSheet<'a> {
         let styles = HashMap::from_iter(styles.iter().cloned());
-        return Template { styles: styles };
+        return StyleSheet { styles: styles };
     }
 }
 
-impl<'a> Template<'a> {
-    pub fn stylesheet(s: &'a str) -> Result<Template<'a>> {
+impl<'a> StyleSheet<'a> {
+    pub fn parse(s: &'a str) -> Result<StyleSheet<'a>> {
         let rules = parse(s)?;
-        Ok(Template::new(&rules))
+        Ok(StyleSheet::new(&rules))
     }
 }
 
 #[test]
 fn test_stylesheet() {
     let styles = vec![("alert", Style::new(None, Some(colored::Color::Red), None))];
-    let expectation = Template::new(&styles);
+    let expectation = StyleSheet::new(&styles);
     assert_eq!(
-        Template::stylesheet("alert{foreground:red}").unwrap(),
+        StyleSheet::parse("alert{foreground:red}").unwrap(),
         expectation
     );
 }
 
-impl<'a> Template<'a> {
+impl<'a> StyleSheet<'a> {
     fn parse_template(t: &str) -> Vec<Part> {
         lazy_static! {
             static ref REGEX: Regex = Regex::new(
@@ -196,7 +196,7 @@ impl<'a> Template<'a> {
     }
 
     pub fn render(&self, t: &str) -> Result<String> {
-        let parts = Template::parse_template(t);
+        let parts = StyleSheet::parse_template(t);
 
         let mut style_stack: Vec<Style> = Vec::new();
 
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_parse_template() {
-        let parts = Template::parse_template("Hello <bold>World</bold><em></em>!");
+        let parts = StyleSheet::parse_template("Hello <bold>World</bold><em></em>!");
         let expectation = vec![
             Part::Text("Hello "),
             Part::OpenTag("bold"),
@@ -265,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_no_styles_template() {
-        let template = Template {
+        let template = StyleSheet {
             styles: HashMap::new(),
         };
         let result = template.render("Hello <bold>World</bold><em></em>!");

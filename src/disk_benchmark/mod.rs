@@ -3,7 +3,6 @@ use bytesize::ByteSize;
 use enum_display_derive::Display;
 use indicatif::ProgressBar;
 use rand::RngCore;
-use std::f32::consts::E;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{Read, Seek, Write};
