@@ -1,7 +1,9 @@
 use anyhow::{Ok, Result};
 use bytesize::ByteSize;
+use enum_display_derive::Display;
 use indicatif::ProgressBar;
 use rand::RngCore;
+use std::fmt::Display;
 use std::fs::File;
 use std::io::{Read, Seek, Write};
 use std::os::fd::AsRawFd;
@@ -64,13 +66,14 @@ pub fn prepare_file(path: &PathBuf, file_size: usize) -> Result<File> {
     return Ok(file);
 }
 
+#[derive(Display)]
 pub enum ReadWrite {
     Read,
     Write,
 }
 
 pub fn process_cycles(
-    mode: ReadWrite,
+    mode: &ReadWrite,
     file: &mut File,
     cycles: i32,
     buffer: &mut [u8],

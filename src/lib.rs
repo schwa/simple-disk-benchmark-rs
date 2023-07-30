@@ -53,12 +53,6 @@ impl std::fmt::Display for DataSize {
 }
 
 impl DataSize {
-    // fn new(size: usize, unit: Unit) -> Self {
-    //     Self { size, unit }
-    // }
-    // fn from_bytes(size: usize) -> Self {
-    //     Self::new(size, Unit::B)
-    // }
     pub fn to_bytes(&self) -> usize {
         match self.unit {
             Unit::B => self.size,
