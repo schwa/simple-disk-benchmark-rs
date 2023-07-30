@@ -116,7 +116,7 @@ impl Style {
 
 #[derive(Debug, PartialEq)]
 pub struct Template<'a> {
-    styles: HashMap<&'a str, Style>, // TODO: make str
+    styles: HashMap<&'a str, Style>,
 }
 
 impl<'a> Default for Template<'a> {

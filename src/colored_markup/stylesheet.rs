@@ -107,7 +107,6 @@ fn test_wrapped_declarations() {
     );
 }
 
-// TODO: Handle trailing semicolon
 fn declarations(s: &str) -> IResult<&str, Style> {
     map(separated_list0(char(';'), declaration), |decls| {
         let mut result = Style::empty();

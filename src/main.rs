@@ -19,31 +19,31 @@ use disk_benchmark::*;
 
 // Based partly on: From <https://www.geschke-online.de/sdb/sdb.1.html>
 
-/// TODO
+/// A simple tool for benchmarking disk performance.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// TODO
+    /// File to use for benchmarking. If this file exists it will be deleted.
     #[arg(value_name = "FILE", default_value = "testfile.dat")]
     path: PathBuf,
 
-    /// TODO
-    #[arg(short, long = "blocksize", value_parser = parse_data_size, default_value = "128MB")]
-    block_size: DataSize,
-
-    /// TODO
-    #[arg(short = 'F', long, default_value_t = false)]
-    use_fsync: bool,
-
-    /// TODO
+    /// Size of the file to use for benchmarking.
     #[arg(short = 's', long = "size", value_name = "FILESIZE", value_parser = parse_data_size, default_value = "1GB")]
     file_size: DataSize,
 
-    /// TODO
+    /// Size of the blocks to read/write.
+    #[arg(short, long = "blocksize", value_parser = parse_data_size, default_value = "128MB")]
+    block_size: DataSize,
+
+    /// Number of test cycles to run.
     #[arg(short, long, default_value_t = 10)]
     cycles: i32,
 
-    /// TODO
+    /// TODO: Not implemented yet.
+    #[arg(short = 'F', long, default_value_t = false)]
+    use_fsync: bool,
+
+    /// Types of test to run: read, write or all.
     #[arg(short, long, default_value = "all")]
     mode: Vec<Mode>,
 }
