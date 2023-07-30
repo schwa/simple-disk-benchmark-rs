@@ -6,7 +6,6 @@ use rand::RngCore;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{Read, Seek, Write};
-use std::os::fd::RawFd;
 use std::os::fd::{AsRawFd, FromRawFd};
 use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
