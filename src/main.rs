@@ -88,14 +88,15 @@ fn main() {
         .unwrap()
         .progress_chars("#-."),
     );
-    progress.set_prefix("Reading");
 
-    for mode in modes {
+    let runs = modes.iter().map(|mode| {
         let mode = match mode {
             Mode::Read => ReadWrite::Read,
             Mode::Write => ReadWrite::Write,
             _ => panic!(),
         };
+
+        progress.set_prefix(format!("{}", mode));
 
         let mut file = prepare_file(&args.path, file_size).unwrap();
         let mut buffer: Vec<u8> = vec![0; block_size];
@@ -103,7 +104,10 @@ fn main() {
             process_cycles(&mode, &mut file, args.cycles, &mut buffer, &progress).unwrap();
         drop(file);
         std::fs::remove_file(&args.path).unwrap();
+        return (mode, measurements);
+    });
 
+    for (mode, measurements) in runs {
         let timings = measurements
             .iter()
             .map(|m| m.per_sec())
@@ -116,11 +120,11 @@ fn main() {
 
         let template = Template::stylesheet(
             "g { foreground: green }
-        r { foreground: magenta }",
+    r { foreground: magenta }",
         )
         .unwrap();
 
-        //log::debug!("{:?}", template);
+        log::debug!("{:?}", template);
 
         println!("Mode: {}", &mode);
         println!(
