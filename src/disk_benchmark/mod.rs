@@ -147,17 +147,4 @@ impl Measurement<u64> {
     pub fn per_sec(&self) -> f64 {
         return self.value as f64 / self.elapsed;
     }
-
-    pub fn sum(measurements: &Vec<Measurement<u64>>) -> Measurement<u64> {
-        let mut sum = 0;
-        let mut elapsed = 0.0;
-        for measurement in measurements {
-            sum += measurement.value;
-            elapsed += measurement.elapsed;
-        }
-        return Measurement {
-            value: sum,
-            elapsed: elapsed,
-        };
-    }
 }
