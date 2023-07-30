@@ -74,7 +74,7 @@ fn main() {
         .with_level(log::LevelFilter::Warn)
         .env()
         .init()
-        .unwrap();
+        .expect("Failed to initialize logger.");
     log::debug!("{:?}", args);
 
     let modes: HashSet<&Mode> = HashSet::from_iter(args.mode.iter());
@@ -91,7 +91,7 @@ fn main() {
         r { foreground: cyan }
         ",
     )
-    .unwrap();
+    .expect("Failed to parse stylesheet.");
 
     println!("{}", cmarkup!(template, "Cycles <r>{}</r>, ", args.cycles));
     println!(
@@ -106,7 +106,7 @@ fn main() {
 
     let runs: Vec<Run> = modes
         .iter()
-        .map(|mode| Run::run(mode, &args).unwrap())
+        .map(|mode| Run::run(mode, &args).expect("Run failed."))
         .collect();
 
     for run in runs.iter() {
@@ -133,7 +133,7 @@ impl Run {
             ProgressStyle::with_template(
                 "{prefix:5.green} {spinner} {elapsed_precise} / {eta_precise} {bar:50.green/white} {bytes:9} {msg}",
             )
-            .unwrap()
+            .expect("Failed to create progress style.")
             .progress_chars("#-"),
         );
         progress.set_prefix(format!("{}", mode));
@@ -141,12 +141,11 @@ impl Run {
         let file_size = args.file_size.to_bytes();
         let block_size = args.block_size.to_bytes();
 
-        let mut file = prepare_file(&args.path, file_size).unwrap();
+        let mut file = prepare_file(&args.path, file_size)?;
         let mut buffer: Vec<u8> = vec![0; block_size];
-        let measurements =
-            process_cycles(&mode, &mut file, args.cycles, &mut buffer, &progress).unwrap();
+        let measurements = process_cycles(&mode, &mut file, args.cycles, &mut buffer, &progress)?;
         drop(file);
-        std::fs::remove_file(&args.path).unwrap();
+        std::fs::remove_file(&args.path)?;
 
         println!();
 

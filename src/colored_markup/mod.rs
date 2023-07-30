@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use anyhow::{Ok, Result};
+use anyhow::{anyhow, Ok, Result};
 use colored::ColoredString;
 use colored::Colorize;
 use lazy_static::lazy_static;
@@ -151,7 +151,6 @@ impl<'a> Template<'a> {
 fn test_stylesheet() {
     let styles = vec![("alert", Style::new(None, Some(colored::Color::Red), None))];
     let expectation = Template::new(&styles);
-
     assert_eq!(
         Template::stylesheet("alert{foreground:red}").unwrap(),
         expectation
@@ -229,7 +228,9 @@ impl<'a> Template<'a> {
                     }
                 }
                 Part::CloseTag(_) => {
-                    style_stack.pop().unwrap();
+                    style_stack
+                        .pop()
+                        .ok_or_else(|| anyhow!("Invalid template"))?; // TODO: error
                 }
             }
         }

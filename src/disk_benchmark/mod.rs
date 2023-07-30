@@ -85,7 +85,7 @@ pub fn process_cycles(
         ByteSize(buffer.len() as u64)
     );
     let mut measurements = Vec::new();
-    let file_size = file.metadata().unwrap().len();
+    let file_size = file.metadata()?.len();
     progress.inc(0);
     for _ in 0..cycles {
         let (measurement, result) = Measurement::measure(file_size, || {

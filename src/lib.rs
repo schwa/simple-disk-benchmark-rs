@@ -1,3 +1,5 @@
+use anyhow::{anyhow, Result};
+
 mod colored_markup;
 mod disk_benchmark;
 
@@ -68,10 +70,10 @@ impl DataSize {
     }
 }
 
-pub fn parse_data_size(s: &str) -> Result<DataSize, String> {
-    let re = regex::Regex::new(r"^(\d+)([a-zA-Z]+)$").unwrap();
-    let caps = re.captures(s).ok_or_else(|| "Invalid data size")?;
-    let size = caps[1].parse::<usize>().unwrap();
+pub fn parse_data_size(s: &str) -> Result<DataSize> {
+    let re = regex::Regex::new(r"^(\d+)([a-zA-Z]+)$").expect("Invalid regex");
+    let caps = re.captures(s).ok_or_else(|| anyhow!("Invalid data size"))?;
+    let size = caps[1].parse::<usize>()?;
     let unit = match &caps[2] {
         "b" | "B" => Unit::B,
         "kb" | "KB" => Unit::KB,
@@ -82,7 +84,7 @@ pub fn parse_data_size(s: &str) -> Result<DataSize, String> {
         "eb" | "EB" => Unit::EB,
         "zb" | "ZB" => Unit::ZB,
         "yb" | "YB" => Unit::YB,
-        _ => return Err("Invalid data size".to_string()),
+        _ => return Err(anyhow!("Invalid data size")),
     };
     Ok(DataSize { size, unit })
 }
