@@ -1,4 +1,5 @@
 mod colored_markup;
+mod disk_benchmark;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Unit {
@@ -92,16 +93,6 @@ pub fn parse_data_size(s: &str) -> Result<DataSize, String> {
     Ok(DataSize { size, unit })
 }
 
-pub fn measure<F, R>(f: F) -> (f64, R)
-where
-    F: FnOnce() -> R,
-{
-    let start = std::time::Instant::now();
-    let result = f();
-    let elapsed = start.elapsed().as_secs_f64();
-    return (elapsed, result);
-}
-
 /// A max function for f64's without NaNs
 pub fn max(vals: &[f64]) -> f64 {
     *vals
@@ -116,43 +107,4 @@ pub fn min(vals: &[f64]) -> f64 {
         .iter()
         .min_by(|a, b| a.partial_cmp(b).unwrap())
         .unwrap()
-}
-
-#[derive(Debug)]
-pub struct Measurement<V> {
-    pub value: V,
-    pub elapsed: f64,
-}
-
-impl Measurement<u64> {
-    pub fn measure<F, R>(value: u64, f: F) -> (Measurement<u64>, R)
-    where
-        F: FnOnce() -> R,
-    {
-        let start = std::time::Instant::now();
-        let result = f();
-        let elapsed = start.elapsed().as_secs_f64();
-        let measurement = Measurement {
-            value: value,
-            elapsed: elapsed,
-        };
-        return (measurement, result);
-    }
-
-    pub fn per_sec(&self) -> f64 {
-        return self.value as f64 / self.elapsed;
-    }
-
-    pub fn sum(measurements: &Vec<Measurement<u64>>) -> Measurement<u64> {
-        let mut sum = 0;
-        let mut elapsed = 0.0;
-        for measurement in measurements {
-            sum += measurement.value;
-            elapsed += measurement.elapsed;
-        }
-        return Measurement {
-            value: sum,
-            elapsed: elapsed,
-        };
-    }
 }
