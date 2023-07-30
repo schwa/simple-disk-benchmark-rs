@@ -31,17 +31,19 @@ pub fn prepare_file(path: &PathBuf, file_size: usize) -> Result<File> {
         .write(true)
         .open(&path)?;
 
-    let fd = file.as_raw_fd();
-    unsafe {
-        log::info!("Setting F_NOCACHE on fd={}", fd);
-        let r = libc::fcntl(fd, libc::F_NOCACHE, 1);
-        if r == -1 {
-            return Err(std::io::Error::last_os_error().into());
-        }
-        log::info!("Setting F_GLOBAL_NOCACHE on fd={}", fd);
-        let r = libc::fcntl(fd, libc::F_GLOBAL_NOCACHE, 1);
-        if r == -1 {
-            return Err(std::io::Error::last_os_error().into());
+    if cfg!(macos) {
+        let fd = file.as_raw_fd();
+        unsafe {
+            log::info!("Setting F_NOCACHE on fd={}", fd);
+            let r = libc::fcntl(fd, libc::F_NOCACHE, 1);
+            if r == -1 {
+                return Err(std::io::Error::last_os_error().into());
+            }
+            log::info!("Setting F_GLOBAL_NOCACHE on fd={}", fd);
+            let r = libc::fcntl(fd, libc::F_GLOBAL_NOCACHE, 1);
+            if r == -1 {
+                return Err(std::io::Error::last_os_error().into());
+            }
         }
     }
     log::info!(
