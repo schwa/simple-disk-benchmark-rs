@@ -6,7 +6,9 @@ use rand::RngCore;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{Read, Seek, Write};
-use std::os::fd::AsRawFd;
+use std::os::fd::RawFd;
+use std::os::fd::{AsRawFd, FromRawFd};
+use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 use std::vec;
 
@@ -23,14 +25,8 @@ pub fn prepare_file(path: &PathBuf, file_size: usize) -> Result<File> {
     if path.exists() {
         std::fs::remove_file(path)?;
     }
-    //    let mut file = File::new(path);?.read(true)?.write(true)?.create(true)?;
-    //create a file for read and write and create
-    let mut file = File::options()
-        .create(true)
-        .read(true)
-        .write(true)
-        .open(&path)?;
 
+    let mut file = File::open_for_benchmarking(&path)?;
     file.set_nocache()?;
     log::info!(
         "Writing {} bytes to {}",
@@ -137,40 +133,72 @@ impl Measurement<u64> {
     }
 }
 
-trait DarwinNoCache {
+trait DiskBenchmark {
+    fn open_for_benchmarking(path: &PathBuf) -> Result<File>;
     fn set_nocache(&self) -> Result<()>;
 }
 
 #[cfg(target_os = "windows")]
-impl DarwinNoCache for File {
+impl DiskBenchmark for File {
+    fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
+        File::options()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(&path)
+            .map_err(|e| e.into())
+    }
+
     fn set_nocache(&self) -> Result<()> {
         Ok(())
     }
 }
 
 #[cfg(target_os = "linux")]
-impl DarwinNoCache for File {
+impl DiskBenchmark for File {
+    fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
+        File::options()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(&path)
+            .map_err(|e| e.into())
+    }
+
     fn set_nocache(&self) -> Result<()> {
         Ok(())
     }
 }
 
 #[cfg(target_os = "macos")]
-impl DarwinNoCache for File {
+impl DiskBenchmark for File {
+    fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
+        log::info!("Opening using posix::open");
+        unsafe {
+            let fd = libc::open(
+                path.as_os_str().as_bytes().as_ptr() as *const i8,
+                libc::O_CREAT | libc::O_RDWR,
+                0o644,
+            );
+            if fd == -1 {
+                return Err(std::io::Error::last_os_error().into());
+            }
+            Ok(File::from_raw_fd(fd))
+        }
+    }
+
     fn set_nocache(&self) -> Result<()> {
         let fd = self.as_raw_fd();
         unsafe {
             log::info!("Setting F_NOCACHE on fd={}", fd);
             let r = libc::fcntl(fd, libc::F_NOCACHE, 1);
             if r == -1 {
-                //return Err(std::io::Error::last_os_error().into());
-                return Err(anyhow::anyhow!("Failed to set F_NOCACHE"));
+                return Err(std::io::Error::last_os_error().into());
             }
             log::info!("Setting F_GLOBAL_NOCACHE on fd={}", fd);
             let r = libc::fcntl(fd, libc::F_GLOBAL_NOCACHE, 1);
             if r == -1 {
-                //return Err(std::io::Error::last_os_error().into());
-                return Err(anyhow::anyhow!("Failed to set F_GLOBAL_NOCACHE"));
+                return Err(std::io::Error::last_os_error().into());
             }
         }
         Ok(())
