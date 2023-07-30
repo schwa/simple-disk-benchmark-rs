@@ -4,6 +4,10 @@ A simple disk benchmark tool.
 
 ![Alt text](docs/out.gif)
 
+## Operating Systems
+
+Currently, only macOS is tested. Linux and Windows _may_ work but are not tested.
+
 ## Installation
 
 ```sh
