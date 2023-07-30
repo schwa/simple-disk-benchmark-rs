@@ -1,6 +1,7 @@
 use anyhow::Result;
 use bytesize::ByteSize;
 use clap::Parser;
+use clap_verbosity_flag;
 use enum_display_derive::Display;
 use indicatif::{ProgressBar, ProgressStyle};
 use simple_disk_benchmark::*;
@@ -8,7 +9,6 @@ use std::collections::HashSet;
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::vec;
-
 //
 
 mod colored_markup;
@@ -46,6 +46,9 @@ struct Args {
     /// Types of test to run: read, write or all.
     #[arg(short, long, default_value = "all")]
     mode: Vec<Mode>,
+
+    #[clap(flatten)]
+    verbose: clap_verbosity_flag::Verbosity,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Display)]
@@ -71,7 +74,7 @@ fn main() {
 
     simple_logger::SimpleLogger::new()
         // .with_module_level("ignore::walk", LevelFilter::Warn)
-        .with_level(log::LevelFilter::Warn)
+        .with_level(args.verbose.log_level_filter())
         .env()
         .init()
         .expect("Failed to initialize logger.");

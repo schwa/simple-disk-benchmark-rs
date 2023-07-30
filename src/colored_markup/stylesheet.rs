@@ -20,9 +20,8 @@ where
     delimited(multispace0, inner, multispace0)
 }
 
-//     //"alert { foreground: red; styles: bold underline; };"
-
 pub(crate) fn parse(s: &str) -> Result<Vec<(&str, Style)>> {
+    // TODO: Handle unconsumed input.
     rules(s)
         .or(Err(anyhow::anyhow!("Failed to parse stylesheet")))
         .map(|(_, rules)| rules)

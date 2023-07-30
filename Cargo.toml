@@ -9,6 +9,7 @@ edition = "2021"
 anyhow = "1.0.72"
 bytesize = "1.2.0"
 clap = { version = "4.3.19", features = ["derive"] }
+clap-verbosity-flag = "2.0.1"
 colored = "2.0.4"
 console = "0.15.7"
 derive-enum-from-into = "0.1.1"
