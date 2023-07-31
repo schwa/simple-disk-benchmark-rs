@@ -11,7 +11,7 @@ Currently, macOS and Linux are tested. Windows _may_ work but is not tested. Dev
 ## Installation
 
 ```sh
-cargo install --git https://github.com/schwa/simple-disk-benchmark-rs
+cargo install simple-disk-benchmark-rs
 ```
 
 ## Usage
@@ -54,7 +54,7 @@ On macOS, the file is opened and F_NO_CACHE and F_GLOBAL_NOCACHE are both set on
 * Run test coverage.
 * Use a better ByteSize replacement.
 * Borrow CPU time stuff from hyperfine.
-* Better output
+* Better output.
 * Fuzz the StyleSheet code.
 * Add a `--no-delete` option to keep the file around after the benchmark.
 * Output data to CSV/Json.
