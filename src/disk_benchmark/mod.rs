@@ -2,6 +2,7 @@ use anyhow::{Ok, Result};
 use enum_display_derive::Display;
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::RngCore;
+use serde::Serialize;
 use std::{
     fmt::Display,
     fs::File,
@@ -13,11 +14,11 @@ use std::{
 mod support;
 use support::*;
 
-use crate::support::DataSize;
+use crate::support::*;
 
 // MARK: -
 
-#[derive(Display, PartialEq, Debug, Clone)]
+#[derive(Display, PartialEq, Debug, Clone, Serialize)]
 pub enum ReadWrite {
     Read,
     Write,
@@ -37,7 +38,7 @@ pub struct SessionOptions {
     pub no_disable_cache: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct SessionResult {
     pub runs: Vec<RunResult>,
 }
@@ -55,10 +56,11 @@ pub struct RunOptions<'a> {
     pub mode: &'a ReadWrite,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct RunResult {
     pub mode: ReadWrite,
     pub cycle_results: Vec<CycleResult>,
+    pub statistics: RunStatistics,
 }
 
 #[derive(Debug)]
@@ -70,12 +72,14 @@ pub struct Run<'a> {
 
 #[derive(Debug)]
 pub struct CycleOptions<'a> {
+    pub cycle: usize,
     pub run_options: &'a RunOptions<'a>,
     pub progress: &'a Option<ProgressBar>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct CycleResult {
+    pub cycle: usize,
     pub bytes: usize,
     pub elapsed: f64,
 }
@@ -132,11 +136,6 @@ impl<'a> Run<'a> {
             rng.fill_bytes(&mut buffer);
         }
 
-        let cycle_options = CycleOptions {
-            run_options: &self.options,
-            progress: &progress,
-        };
-
         let mut file = self.prepare_file(
             &session_options.path,
             session_options.file_size,
@@ -144,13 +143,20 @@ impl<'a> Run<'a> {
             session_options.no_disable_cache,
         )?;
 
-        let results = (0..session_options.cycles).map(|cycle_index| {
-            log::trace!("Cycle {} of {}", cycle_index + 1, session_options.cycles);
-            let cycle = Cycle {
-                options: &cycle_options,
-            };
-            cycle.main(&mut file, &mut buffer)
-        });
+        let results = (0..session_options.cycles)
+            .map(|cycle_index| {
+                log::trace!("Cycle {} of {}", cycle_index + 1, session_options.cycles);
+                let cycle_options = CycleOptions {
+                    cycle: cycle_index,
+                    run_options: &self.options,
+                    progress: &progress,
+                };
+                let cycle = Cycle {
+                    options: &cycle_options,
+                };
+                cycle.main(&mut file, &mut buffer)
+            })
+            .collect::<Result<Vec<CycleResult>>>()?;
 
         if !session_options.no_delete {
             if !session_options.no_create {
@@ -164,10 +170,7 @@ impl<'a> Run<'a> {
             }
         }
 
-        let result = RunResult {
-            mode: self.options.mode.to_owned(),
-            cycle_results: results.collect::<Result<Vec<CycleResult>>>()?,
-        };
+        let result = RunResult::new(self.options.mode.to_owned(), results);
         Ok(result)
     }
 
@@ -227,6 +230,17 @@ impl<'a> Run<'a> {
     }
 }
 
+impl RunResult {
+    fn new(mode: ReadWrite, cycle_results: Vec<CycleResult>) -> Self {
+        let statistics = RunStatistics::new(&cycle_results);
+        RunResult {
+            mode: mode,
+            cycle_results: cycle_results,
+            statistics: statistics,
+        }
+    }
+}
+
 impl<'a> Cycle<'a> {
     fn main(&self, file: &'a mut File, buffer: &'a mut Vec<u8>) -> Result<CycleResult> {
         let run_options = &self.options.run_options;
@@ -249,6 +263,7 @@ impl<'a> Cycle<'a> {
         if session_options.dry_run {
             log::info!("Dry run, skipping read/write.");
             return Ok(CycleResult {
+                cycle: self.options.cycle,
                 bytes: session_options.file_size,
                 elapsed: 1.0,
             });
@@ -283,9 +298,41 @@ impl<'a> Cycle<'a> {
         });
 
         let result = CycleResult {
+            cycle: self.options.cycle,
             bytes: session_options.file_size,
             elapsed,
         };
         return Ok(result);
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct RunStatistics {
+    pub mean: f64,
+    pub median: f64,
+    pub standard_deviation: f64,
+    pub min: f64,
+    pub max: f64,
+}
+
+impl RunStatistics {
+    fn new(cycle_results: &Vec<CycleResult>) -> Self {
+        let timings = cycle_results
+            .iter()
+            .map(|r| r.bytes as f64 / r.elapsed)
+            .collect::<Vec<f64>>();
+        let mean = statistical::mean(&timings);
+        let median = statistical::median(&timings);
+        let standard_deviation = statistical::standard_deviation(&timings, Some(mean));
+        let min = min(&timings);
+        let max = max(&timings);
+
+        RunStatistics {
+            mean,
+            median,
+            standard_deviation,
+            min,
+            max,
+        }
     }
 }

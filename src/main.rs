@@ -3,8 +3,11 @@ use clap::Parser;
 use clap_verbosity_flag::*;
 use enum_display_derive::Display;
 use minijinja::{context, Environment};
+use serde::Serialize;
+use serde_json;
 use std::collections::HashSet;
 use std::fmt::Display;
+use std::fs::File;
 use std::path::PathBuf;
 use std::vec;
 //
@@ -63,9 +66,13 @@ struct Args {
     #[clap(flatten)]
     verbose: Verbosity<WarnLevel>,
 
-    /// Do not actually perform benchmarks to the disk (file is still created and/or deleted)
+    /// Do not actually perform benchmarks to the disk (file is still created and/or deleted).
     #[arg(short, long, default_value_t = false)]
     dry_run: bool,
+
+    /// Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds.
+    #[arg(long, value_name = "FILE")]
+    export_json: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Display, clap::ValueEnum)]
@@ -114,6 +121,7 @@ fn main() -> anyhow::Result<()> {
     } else {
         args.mode.clone()
     };
+    log::debug!("Modes: {:?}", modes);
     let modes = modes
         .iter()
         .map(|m| match m {
@@ -155,10 +163,18 @@ File Size: <size>{{ file_size }}</size>";
         no_disable_cache: args.no_disable_cache,
     };
     let session = Session { options };
-    let result = session.main().expect("Session failed.");
+    let session_result = session.main().expect("Session failed.");
 
-    for run in result.runs.iter() {
-        run.display_result();
+    for run_result in session_result.runs.iter() {
+        run_result.display_result();
+    }
+
+    if let Some(path) = args.export_json {
+        let report = Report {
+            session: session_result,
+        };
+        let file = File::create(path)?;
+        serde_json::to_writer_pretty(file, &report)?;
     }
 
     Ok(())
@@ -170,28 +186,16 @@ trait RunDisplay {
 
 impl RunDisplay for RunResult {
     fn display_result(&self) {
-        let timings = self
-            .cycle_results
-            .iter()
-            .map(|r| r.bytes as f64 / r.elapsed)
-            .collect::<Vec<f64>>();
-        log::info!("Timings: {:?}", timings);
-        let mean = statistical::mean(&timings);
-        let median = statistical::median(&timings);
-        let standard_deviation = statistical::standard_deviation(&timings, Some(mean));
-        let min = min(&timings);
-        let max = max(&timings);
-
         let template = "Mode: <mode>{{mode}}</mode>
 Mean: <speed>{{mean}}</speed>/sec, Median: <speed>{{median}}</speed>/sec, Standard Deviation Ø: <speed>{{standard_deviation}}</speed>/sec
 Min: <speed>{{min}}</speed>/sec, Max: <speed>{{max}}</speed>/sec";
         let context = context! {
             mode => self.mode.to_string(),
-            mean => DataSize::from(mean).to_human_string(),
-            median => DataSize::from(median).to_human_string(),
-            standard_deviation => DataSize::from(standard_deviation).to_human_string(),
-            min => DataSize::from(min).to_human_string(),
-            max => DataSize::from(max).to_human_string(),
+            mean => DataSize::from(self.statistics.mean).to_human_string(),
+            median => DataSize::from(self.statistics.median).to_human_string(),
+            standard_deviation => DataSize::from(self.statistics.standard_deviation).to_human_string(),
+            min => DataSize::from(self.statistics.min).to_human_string(),
+            max => DataSize::from(self.statistics.max).to_human_string(),
         };
         render(&template, &context).unwrap();
     }
@@ -216,4 +220,9 @@ fn render(template: &str, context: &minijinja::value::Value) -> anyhow::Result<(
     println!("{}", style_sheet.render(&render)?);
 
     Ok(())
+}
+
+#[derive(Serialize)]
+struct Report {
+    session: SessionResult,
 }

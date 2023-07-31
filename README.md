@@ -52,12 +52,13 @@ On macOS, the file is opened and F_NO_CACHE and F_GLOBAL_NOCACHE are both set on
 * Put on homebrew.
 * More documentation.
 * Run test coverage.
-~~* Use a better ByteSize replacement.~~
+* ~~Use a better ByteSize replacement.~~
 * Borrow CPU time stuff from hyperfine.
 * Better output.
 * Fuzz the StyleSheet code.
 * ~~Add a `--no-delete` option to keep the file around after the benchmark.~~
-* Output data to CSV/Json.
+* ~~Output data to JSON~~.
+* Output data to CSV.
 * ~~Find out what's going on with all the dead_code false positives.~~
 * ~~Sort out pub/mod stuff~~.
 
