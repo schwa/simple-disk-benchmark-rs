@@ -30,11 +30,11 @@ struct Args {
 
     /// Size of the file to use for benchmarking.
     #[arg(short = 's', long = "size", value_name = "FILESIZE", value_parser = parse_data_size, default_value = "1GB")]
-    file_size: DataSize,
+    file_size: DataSize<usize>,
 
     /// Size of the blocks to read/write.
     #[arg(short, long = "blocksize", value_parser = parse_data_size, default_value = "128MB")]
-    block_size: DataSize,
+    block_size: DataSize<usize>,
 
     /// Number of test cycles to run.
     #[arg(short, long, default_value_t = 10)]
@@ -137,8 +137,8 @@ File Size: <size>{{ file_size }}</size>";
         os => info,
         os_version => info.version().to_string(),
         cycles => args.cycles,
-        block_size => args.block_size.clone(),
-        file_size => args.file_size.clone(),
+        block_size => args.block_size.to_human_string(),
+        file_size => args.file_size.to_human_string(),
     };
     render(&template, &context)?;
 
@@ -184,15 +184,15 @@ impl RunDisplay for RunResult {
         let max = max(&timings);
 
         let template = "Mode: <mode>{{mode}}</mode>
-Mean: <speed>{{mean}}</speed>, Median: <speed>{{median}}</speed>, Standard Deviation Ø: <speed>{{stddev}}</speed>
-Min: <speed>{{min}}</speed>, Max: <speed>{{max}}</speed>";
+Mean: <speed>{{mean}}</speed>/sec, Median: <speed>{{median}}</speed>/sec, Standard Deviation Ø: <speed>{{standard_deviation}}</speed>/sec
+Min: <speed>{{min}}</speed>/sec, Max: <speed>{{max}}</speed>/sec";
         let context = context! {
             mode => self.mode.to_string(),
-            mean => ByteSize(mean as u64).to_string(),
-            median => ByteSize(median as u64).to_string(),
-            stddev => ByteSize(standard_deviation as u64).to_string(),
-            min => ByteSize(min as u64).to_string(),
-            max => ByteSize(max as u64).to_string(),
+            mean => DataSize::from(mean).to_human_string(),
+            median => DataSize::from(median).to_human_string(),
+            standard_deviation => DataSize::from(standard_deviation).to_human_string(),
+            min => DataSize::from(min).to_human_string(),
+            max => DataSize::from(max).to_human_string(),
         };
         render(&template, &context).unwrap();
     }

@@ -1,7 +1,11 @@
 use anyhow::{anyhow, Result};
+use core::fmt::{Debug, Display};
+use core::str::FromStr;
+use num_traits::{Num, NumCast};
 use serde::{Deserialize, Serialize};
+use strum::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, EnumIter, Display)]
 pub enum Unit {
     B,
     KB,
@@ -10,56 +14,84 @@ pub enum Unit {
     TB,
     PB,
     EB,
-    ZB,
-    YB,
+}
+
+impl Unit {
+    // TODO: Really need a generic version.
+    fn bytes(&self) -> u64 {
+        match self {
+            Unit::B => 1,
+            Unit::KB => 1024,
+            Unit::MB => 1024 * 1024,
+            Unit::GB => 1024 * 1024 * 1024,
+            Unit::TB => 1024 * 1024 * 1024 * 1024,
+            Unit::PB => 1024 * 1024 * 1024 * 1024 * 1024,
+            Unit::EB => 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub struct DataSize {
-    pub size: usize,
+pub struct DataSize<N>
+where
+    N: Num,
+{
+    pub size: N,
     pub unit: Unit,
 }
 
-impl Serialize for DataSize {
+// impl DataSize<u64> {
+//     fn bytes_u64(self) -> u64 {
+//         self.size * self.unit.bytes()
+//     }
+// }
+
+impl<N: Num> DataSize<N> {
+    fn new(size: N, unit: Unit) -> Self {
+        DataSize { size, unit }
+    }
+}
+
+impl<N: Num + NumCast> DataSize<N> {
+    fn bytes(self) -> N {
+        let bytes: N =
+            NumCast::from(self.unit.bytes()).expect("Invalid cast: self.unit.bytes to N.");
+        self.size * bytes
+    }
+}
+
+#[test]
+fn test_bytes() {
+    assert_eq!(
+        DataSize::<f64> {
+            size: 1.0,
+            unit: Unit::KB
+        }
+        .bytes(),
+        1024.0
+    );
+}
+
+impl<N: Num + Display> Serialize for DataSize<N> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&format!("{}", self))
     }
 }
 
-impl std::fmt::Debug for DataSize {
+impl<N: Num + Debug> std::fmt::Debug for DataSize<N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.unit {
-            Unit::B => write!(f, "{}B", self.size),
-            Unit::KB => write!(f, "{}KB", self.size),
-            Unit::MB => write!(f, "{}MB", self.size),
-            Unit::GB => write!(f, "{}GB", self.size),
-            Unit::TB => write!(f, "{}TB", self.size),
-            Unit::PB => write!(f, "{}PB", self.size),
-            Unit::EB => write!(f, "{}EB", self.size),
-            Unit::ZB => write!(f, "{}ZB", self.size),
-            Unit::YB => write!(f, "{}YB", self.size),
-        }
+        write!(f, "{:?} {:?}", self.size, self.unit)
     }
 }
 
-impl std::fmt::Display for DataSize {
+impl<N: Num + Display> std::fmt::Display for DataSize<N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.unit {
-            Unit::B => write!(f, "{}B", self.size),
-            Unit::KB => write!(f, "{}KB", self.size),
-            Unit::MB => write!(f, "{}MB", self.size),
-            Unit::GB => write!(f, "{}GB", self.size),
-            Unit::TB => write!(f, "{}TB", self.size),
-            Unit::PB => write!(f, "{}PB", self.size),
-            Unit::EB => write!(f, "{}EB", self.size),
-            Unit::ZB => write!(f, "{}ZB", self.size),
-            Unit::YB => write!(f, "{}YB", self.size),
-        }
+        write!(f, "{} {}", self.size, self.unit)
     }
 }
 
-impl From<usize> for DataSize {
-    fn from(size: usize) -> Self {
+impl<N: Num> From<N> for DataSize<N> {
+    fn from(size: N) -> Self {
         return DataSize {
             size: size,
             unit: Unit::B,
@@ -67,23 +99,78 @@ impl From<usize> for DataSize {
     }
 }
 
-impl From<DataSize> for usize {
-    fn from(data_size: DataSize) -> Self {
-        match data_size.unit {
-            Unit::B => data_size.size,
-            Unit::KB => data_size.size * 1024,
-            Unit::MB => data_size.size * 1024 * 1024,
-            Unit::GB => data_size.size * 1024 * 1024 * 1024,
-            Unit::TB => data_size.size * 1024 * 1024 * 1024 * 1024,
-            Unit::PB => data_size.size * 1024 * 1024 * 1024 * 1024 * 1024,
-            Unit::EB => data_size.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-            Unit::ZB => data_size.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-            Unit::YB => data_size.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-        }
+// TODO: Can we make this generic?
+impl From<DataSize<usize>> for usize {
+    fn from(data_size: DataSize<usize>) -> usize {
+        data_size.unit.bytes() as usize * data_size.size
     }
 }
 
-pub fn parse_data_size(s: &str) -> Result<DataSize> {
+#[test]
+fn test_1() {
+    let make = |size: usize, unit: Unit| -> usize {
+        let d = DataSize {
+            size: size,
+            unit: unit,
+        };
+        d.into()
+    };
+    assert_eq!(make(1, Unit::B), 1);
+    assert_eq!(make(1, Unit::KB), 1024);
+    assert_eq!(make(1, Unit::EB), 1024 * 1024 * 1024 * 1024 * 1024 * 1024);
+}
+
+impl<N: Num + PartialOrd + NumCast + Copy> DataSize<N> {
+    pub fn lowest_f64_size(self) -> DataSize<f64> {
+        if self.size == N::zero() {
+            return DataSize::new(0.0, Unit::B);
+        }
+        let bytes = self.bytes();
+        let unit = Unit::iter()
+            .rev()
+            .find(|unit: &Unit| {
+                let unit_bytes = NumCast::from(unit.bytes());
+                match unit_bytes {
+                    Some(unit_bytes) => bytes >= unit_bytes,
+                    None => false,
+                }
+            })
+            .expect(&format!("Couldn't find unit"));
+
+        let size: f64 = self.bytes().to_f64().expect("Size to f64.") / unit.bytes() as f64;
+        return DataSize::new(size, unit);
+    }
+
+    pub fn to_human_string(self) -> String {
+        let size = self.lowest_f64_size();
+        return format!("{:.1} {}", size.size, size.unit.to_string());
+    }
+}
+
+#[test]
+fn test_lowest_f64_size() {
+    assert_eq!(
+        DataSize::new(1, Unit::B).lowest_f64_size(),
+        DataSize::new(1.0, Unit::B)
+    );
+    assert_eq!(
+        DataSize::new(128, Unit::MB).lowest_f64_size(),
+        DataSize::new(128.0, Unit::MB)
+    );
+    assert_eq!(
+        DataSize::new(2000, Unit::MB).lowest_f64_size(),
+        DataSize::new(1.953125, Unit::GB)
+    );
+}
+
+#[test]
+fn test_to_human_string() {
+    println!("{}", DataSize::new(1, Unit::B).to_human_string());
+    assert_eq!(DataSize::new(1, Unit::B).to_human_string(), "1.0 B");
+    assert_eq!(DataSize::new(128, Unit::MB).to_human_string(), "128.0 MB");
+}
+
+pub fn parse_data_size(s: &str) -> Result<DataSize<usize>> {
     let re = regex::Regex::new(r"^(\d+)([a-zA-Z]+)$").expect("Invalid regex");
     let caps = re.captures(s).ok_or_else(|| anyhow!("Invalid data size"))?;
     let size = caps[1].parse::<usize>()?;
@@ -95,8 +182,6 @@ pub fn parse_data_size(s: &str) -> Result<DataSize> {
         "tb" | "TB" => Unit::TB,
         "pb" | "PB" => Unit::PB,
         "eb" | "EB" => Unit::EB,
-        "zb" | "ZB" => Unit::ZB,
-        "yb" | "YB" => Unit::YB,
         _ => return Err(anyhow!("Invalid data size")),
     };
     Ok(DataSize { size, unit })
