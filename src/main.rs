@@ -176,7 +176,7 @@ impl Run {
             "{}",
             cmarkup!(
                 style_sheet,
-                "Mean: <g>{}/s</g>, Medium: <g>{}/s</g>, Standard Deviation: <r>{}/s</r>",
+                "Mean: <g>{}/s</g>, Medium: <g>{}/s</g>, Standard Deviation Ø: <r>{}/s</r>",
                 ByteSize(mean as u64),
                 ByteSize(median as u64),
                 ByteSize(standard_deviation as u64)
