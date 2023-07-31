@@ -14,32 +14,6 @@ where
     return (elapsed, result);
 }
 
-#[derive(Debug)]
-pub struct Measurement<V> {
-    pub value: V,
-    pub elapsed: f64,
-}
-
-impl Measurement<usize> {
-    pub fn measure<F, R>(value: usize, f: F) -> (Measurement<usize>, R)
-    where
-        F: FnOnce() -> R,
-    {
-        let start = std::time::Instant::now();
-        let result = f();
-        let elapsed = start.elapsed().as_secs_f64();
-        let measurement = Measurement {
-            value: value,
-            elapsed: elapsed,
-        };
-        return (measurement, result);
-    }
-
-    pub fn per_sec(&self) -> f64 {
-        return self.value as f64 / self.elapsed;
-    }
-}
-
 pub trait DiskBenchmark {
     fn open_for_benchmarking(path: &PathBuf) -> Result<File>;
     fn set_nocache(&self) -> Result<()>;

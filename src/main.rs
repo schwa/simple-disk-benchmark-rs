@@ -1,8 +1,8 @@
+use anyhow::ensure;
 use bytesize::ByteSize;
 use clap::Parser;
-use clap_verbosity_flag;
+use clap_verbosity_flag::*;
 use enum_display_derive::Display;
-
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::path::PathBuf;
@@ -47,8 +47,13 @@ struct Args {
     #[arg(short, long, default_value_t = false)]
     no_delete: bool,
 
+    /// Set the log level.
     #[clap(flatten)]
-    verbose: clap_verbosity_flag::Verbosity,
+    verbose: Verbosity<WarnLevel>,
+
+    /// Do not actually perform benchmarks to the disk (file is still created and/or deleted)
+    #[arg(short, long, default_value_t = false)]
+    dry_run: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Display, clap::ValueEnum)]
@@ -68,6 +73,28 @@ fn main() -> anyhow::Result<()> {
         .init()
         .expect("Failed to initialize logger.");
     log::debug!("{:?}", args);
+
+    let file_size = args.file_size.to_bytes() as usize;
+    let block_size = args.block_size.to_bytes() as usize;
+    ensure!(
+        file_size > block_size,
+        "File size ({}) is smaller than block size ({}).",
+        ByteSize(file_size as u64),
+        ByteSize(block_size as u64)
+    );
+    ensure!(file_size > 0, "File size must be greater than zero.");
+    ensure!(block_size > 0, "Block size must be greater than zero.");
+
+    // if file size is not divisible by block size, reduce file size and log a warning
+    if file_size % block_size != 0 {
+        let new_file_size = file_size - (file_size % block_size);
+        log::warn!(
+            "File size ({}) is not divisible by block size ({}). Reducing file size to {}.",
+            ByteSize(file_size as u64),
+            ByteSize(block_size as u64),
+            ByteSize(new_file_size as u64)
+        );
+    }
 
     let modes: HashSet<&Mode> = HashSet::from_iter(args.mode.iter());
     let modes = if modes.contains(&Mode::All) {
@@ -114,6 +141,7 @@ fn main() -> anyhow::Result<()> {
         block_size: args.block_size.to_bytes() as usize,
         cycles: args.cycles as usize,
         no_delete: args.no_delete,
+        dry_run: args.dry_run,
     };
     let session = Session { options };
     let result = session.main().expect("Session failed.");

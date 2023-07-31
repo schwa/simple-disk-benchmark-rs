@@ -2,7 +2,6 @@ use anyhow::{Ok, Result};
 use bytesize::ByteSize;
 use enum_display_derive::Display;
 use indicatif::{ProgressBar, ProgressStyle};
-use itertools::Itertools;
 use rand::RngCore;
 use std::{
     fmt::Display,
@@ -31,6 +30,7 @@ pub struct SessionOptions {
     pub block_size: usize,
     pub cycles: usize,
     pub no_delete: bool,
+    pub dry_run: bool,
 }
 
 #[derive(Debug)]
@@ -198,33 +198,49 @@ impl<'a> Cycle<'a> {
         let run_options = &self.options.run_options;
         let session_options = &run_options.session_options;
 
+        assert!(session_options.file_size > session_options.block_size);
+
         log::info!(
             "read: cycles={} / block_size={}",
             session_options.cycles,
             ByteSize(session_options.block_size as u64)
         );
-        //let mut measurements = Vec::new();
         self.options.progress.inc(0);
 
         file.seek(std::io::SeekFrom::Start(0))?;
         let ops = session_options.file_size / session_options.block_size;
 
-        let start = std::time::Instant::now();
-        for _ in 0..ops {
+        if session_options.dry_run {
+            log::info!("Dry run, skipping read/write.");
+            return Ok(CycleResult {
+                bytes: session_options.file_size,
+                elapsed: 1.0,
+            });
+        }
+        let (elapsed, _) = measure(|| -> Result<()> {
             match run_options.mode {
                 ReadWrite::Read => {
-                    let count = file.read(buffer)?;
-                    if count == 0 {
-                        panic!();
+                    for _ in 0..ops {
+                        let count = file.read(buffer)?;
+                        if count != buffer.len() {
+                            return Err(anyhow::anyhow!(
+                                "Read {} bytes, expected {}.",
+                                count,
+                                buffer.len()
+                            ));
+                        }
+                        self.options.progress.inc(session_options.block_size as u64);
                     }
                 }
                 ReadWrite::Write => {
-                    file.write(&buffer)?;
+                    for _ in 0..ops {
+                        file.write(buffer)?;
+                        self.options.progress.inc(session_options.block_size as u64);
+                    }
                 }
             }
-            self.options.progress.inc(session_options.block_size as u64);
-        }
-        let elapsed = start.elapsed().as_secs_f64();
+            Ok(())
+        });
 
         let result = CycleResult {
             bytes: session_options.file_size,

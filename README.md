@@ -56,10 +56,10 @@ On macOS, the file is opened and F_NO_CACHE and F_GLOBAL_NOCACHE are both set on
 * Borrow CPU time stuff from hyperfine.
 * Better output.
 * Fuzz the StyleSheet code.
-* Add a `--no-delete` option to keep the file around after the benchmark.
+* ~~Add a `--no-delete` option to keep the file around after the benchmark.~~
 * Output data to CSV/Json.
-* Find out what's going on with all the dead_code false positives.
-* Sort out pub/mod stuff.
+* ~~Find out what's going on with all the dead_code false positives.~~
+* ~~Sort out pub/mod stuff~~.
 
 ## License
 
