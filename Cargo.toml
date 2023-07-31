@@ -9,7 +9,6 @@ categories = ["command-line-utilities", "filesystem"]
 homepage = "https://github.com/schwa/simple-disk-benchmark-rs"
 keywords = ["benchmark", "cli", "disk"]
 license = "MIT"
-license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/schwa/simple-disk-benchmark-rs"
 
