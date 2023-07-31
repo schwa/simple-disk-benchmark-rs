@@ -39,13 +39,13 @@ struct Args {
     #[arg(short, long, default_value_t = 10)]
     cycles: i32,
 
-    /// TODO: Not implemented yet.
-    #[arg(short = 'F', long, default_value_t = false)]
-    use_fsync: bool,
-
     /// Types of test to run: read, write or all.
     #[arg(short, long, default_value = "all")]
     mode: Vec<Mode>,
+
+    /// Do not delete the test file after the test.
+    #[arg(short, long, default_value_t = false)]
+    no_delete: bool,
 
     #[clap(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
@@ -151,7 +151,11 @@ impl Run {
         let mut buffer: Vec<u8> = vec![0; block_size];
         let measurements = process_cycles(&mode, &mut file, args.cycles, &mut buffer, &progress)?;
         drop(file);
-        std::fs::remove_file(&args.path)?;
+
+        if !args.no_delete {
+            log::info!("Deleting test file {}.", args.path.display());
+            std::fs::remove_file(&args.path)?;
+        }
 
         println!();
 
