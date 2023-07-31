@@ -15,13 +15,21 @@ where
 }
 
 pub trait DiskBenchmark {
-    fn open_for_benchmarking(path: &PathBuf, no_create: bool) -> Result<File>;
+    fn open_for_benchmarking(
+        path: &PathBuf,
+        no_create: bool,
+        no_disable_cache: bool,
+    ) -> Result<File>;
     fn set_nocache(&self) -> Result<()>;
 }
 
 #[cfg(target_os = "windows")]
 impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
+    fn open_for_benchmarking(
+        path: &PathBuf,
+        no_create: bool,
+        no_disable_cache: bool,
+    ) -> Result<File> {
         File::options()
             .create(true)
             .read(true)
@@ -37,12 +45,24 @@ impl DiskBenchmark for File {
 
 #[cfg(target_os = "linux")]
 impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
+    fn open_for_benchmarking(
+        path: &PathBuf,
+        no_create: bool,
+        no_disable_cache: bool,
+    ) -> Result<File> {
         log::info!("Opening using posix::open");
         unsafe {
+            let mut oflags = libc::O_RDWR;
+            if !no_create {
+                oflags |= libc::O_CREAT;
+            }
+            if !no_disable_cache {
+                oflags |= libc::O_DIRECT;
+            }
+
             let fd = libc::open(
                 path.as_os_str().as_bytes().as_ptr() as *const u8,
-                libc::O_CREAT | libc::O_RDWR | libc::O_DIRECT,
+                oflags,
                 0o644,
             );
             if fd == -1 {
@@ -59,7 +79,7 @@ impl DiskBenchmark for File {
 
 #[cfg(target_os = "macos")]
 impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf, no_create: bool) -> Result<File> {
+    fn open_for_benchmarking(path: &PathBuf, no_create: bool, _: bool) -> Result<File> {
         log::info!("Opening using posix::open");
         unsafe {
             let mut oflags = libc::O_RDWR;

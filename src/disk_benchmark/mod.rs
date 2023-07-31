@@ -140,6 +140,7 @@ impl<'a> Run<'a> {
             &session_options.path,
             session_options.file_size,
             session_options.no_create,
+            session_options.no_disable_cache,
         )?;
 
         let results = (0..session_options.cycles).map(|cycle_index| {
@@ -169,7 +170,13 @@ impl<'a> Run<'a> {
         Ok(result)
     }
 
-    pub fn prepare_file(&self, path: &PathBuf, file_size: usize, no_create: bool) -> Result<File> {
+    pub fn prepare_file(
+        &self,
+        path: &PathBuf,
+        file_size: usize,
+        no_create: bool,
+        no_disable_cache: bool,
+    ) -> Result<File> {
         log::info!(
             "Preparing test file {}, size: {}.",
             path.display(),
@@ -192,7 +199,7 @@ impl<'a> Run<'a> {
             }
         }
 
-        let mut file = File::open_for_benchmarking(&path, no_create)?;
+        let mut file = File::open_for_benchmarking(&path, no_create, no_disable_cache)?;
         if !self.options.session_options.no_disable_cache {
             file.set_nocache()?;
         }

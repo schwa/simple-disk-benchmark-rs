@@ -12,6 +12,7 @@
     "minijinja",
     "multispace",
     "NOCACHE",
+    "oflags",
     "posix",
     "RDONLY",
     "RUSR",
@@ -23,8 +24,5 @@
     "tmpl",
     "vals"
   ],
-  "rust-analyzer.linkedProjects": [
-    "./Cargo.toml",
-    "./Cargo.toml"
-  ]
+  "rust-analyzer.linkedProjects": ["./Cargo.toml", "./Cargo.toml"]
 }
