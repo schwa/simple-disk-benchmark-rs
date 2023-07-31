@@ -49,13 +49,6 @@ impl<N: Num> DataSize<N> {
     pub fn new(size: N, unit: Unit) -> Self {
         DataSize { size, unit }
     }
-
-    pub fn from_bytes(size: N) -> Self {
-        DataSize {
-            size,
-            unit: Unit::B,
-        }
-    }
 }
 
 impl<N: Num + NumCast> DataSize<N> {

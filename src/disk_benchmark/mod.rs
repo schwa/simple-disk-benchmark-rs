@@ -24,7 +24,7 @@ pub enum ReadWrite {
     Write,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct SessionOptions {
     pub modes: Vec<ReadWrite>,
     pub path: PathBuf,

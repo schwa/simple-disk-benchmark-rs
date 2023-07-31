@@ -170,9 +170,7 @@ File Size: <size>{{ file_size }}</size>";
     }
 
     if let Some(path) = args.export_json {
-        let report = Report {
-            session: session_result,
-        };
+        let report = Report::new(&session.options, &session_result);
         let file = File::create(path)?;
         serde_json::to_writer_pretty(file, &report)?;
     }
@@ -223,6 +221,20 @@ fn render(template: &str, context: &minijinja::value::Value) -> anyhow::Result<(
 }
 
 #[derive(Serialize)]
-struct Report {
-    session: SessionResult,
+struct Report<'a> {
+    args: String,
+    created: chrono::DateTime<chrono::Local>,
+    options: &'a SessionOptions,
+    runs: &'a Vec<RunResult>,
+}
+
+impl<'a> Report<'a> {
+    fn new(session: &'a SessionOptions, result: &'a SessionResult) -> Self {
+        Self {
+            args: std::env::args().collect::<Vec<String>>()[1..].join(" "),
+            created: chrono::Local::now(),
+            options: session,
+            runs: &result.runs,
+        }
+    }
 }
