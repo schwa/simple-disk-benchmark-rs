@@ -702,7 +702,7 @@ checksum = "60363bdd39a7be0266a520dab25fdc9241d2f987b08a01e01f0ec6d06a981348"
 
 [[package]]
 name = "simple-disk-benchmark"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "bytesize",
