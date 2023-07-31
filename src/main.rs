@@ -87,13 +87,13 @@ fn main() -> anyhow::Result<()> {
         .expect("Failed to initialize logger.");
     log::debug!("{:?}", args);
 
-    let file_size = args.file_size.to_bytes() as usize;
-    let block_size = args.block_size.to_bytes() as usize;
+    let file_size: usize = args.file_size.into();
+    let block_size: usize = args.block_size.into();
     ensure!(
         file_size > block_size,
         "File size ({}) is smaller than block size ({}).",
-        ByteSize(file_size as u64),
-        ByteSize(block_size as u64)
+        args.file_size,
+        args.block_size
     );
     ensure!(file_size > 0, "File size must be greater than zero.");
     ensure!(block_size > 0, "Block size must be greater than zero.");
@@ -103,9 +103,9 @@ fn main() -> anyhow::Result<()> {
         let new_file_size = file_size - (file_size % block_size);
         log::warn!(
             "File size ({}) is not divisible by block size ({}). Reducing file size to {}.",
-            ByteSize(file_size as u64),
-            ByteSize(block_size as u64),
-            ByteSize(new_file_size as u64)
+            args.file_size,
+            args.block_size,
+            DataSize::from(new_file_size),
         );
     }
 
@@ -124,21 +124,30 @@ fn main() -> anyhow::Result<()> {
         })
         .collect::<Vec<ReadWrite>>();
 
-    let template = "Cycles: <num>{{ cycles }}</num>
+    let info = os_info::get();
+    info.version();
+
+    let template = "File: <info>{{file}}</info>
+OS: <info>{{os.os_type}} {{os_version}} ({{os.architecture}})</info>
+Cycles: <num>{{ cycles }}</num>
 Block Size: <size>{{ block_size }}</size>
 File Size: <size>{{ file_size }}</size>";
     let context = context! {
+        file => args.path.to_string_lossy(),
+        os => info,
+        os_version => info.version().to_string(),
         cycles => args.cycles,
-        block_size => args.block_size.to_string(),
-        file_size => args.file_size.to_string(),
+        block_size => args.block_size.clone(),
+        file_size => args.file_size.clone(),
     };
     render(&template, &context)?;
 
+    // TODO: It's rather silly copying all this from Args.
     let options = SessionOptions {
         modes: modes,
         path: args.path,
-        file_size: args.file_size.to_bytes() as usize,
-        block_size: args.block_size.to_bytes() as usize,
+        file_size: args.file_size.into(),
+        block_size: args.block_size.into(),
         cycles: args.cycles as usize,
         no_create: args.no_create,
         no_delete: args.no_delete,
@@ -192,6 +201,7 @@ Min: <speed>{{min}}</speed>, Max: <speed>{{max}}</speed>";
 fn render(template: &str, context: &minijinja::value::Value) -> anyhow::Result<()> {
     let style_sheet = StyleSheet::parse(
         "
+        info { foreground: yellow }
         mode { foreground: red }
         speed { foreground: cyan }
         size { foreground: green }

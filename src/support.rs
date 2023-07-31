@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Unit {
     B,
     KB,
@@ -13,10 +14,16 @@ pub enum Unit {
     YB,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct DataSize {
     pub size: usize,
     pub unit: Unit,
+}
+
+impl Serialize for DataSize {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&format!("{}", self))
+    }
 }
 
 impl std::fmt::Debug for DataSize {
@@ -51,18 +58,27 @@ impl std::fmt::Display for DataSize {
     }
 }
 
-impl DataSize {
-    pub fn to_bytes(&self) -> usize {
-        match self.unit {
-            Unit::B => self.size,
-            Unit::KB => self.size * 1024,
-            Unit::MB => self.size * 1024 * 1024,
-            Unit::GB => self.size * 1024 * 1024 * 1024,
-            Unit::TB => self.size * 1024 * 1024 * 1024 * 1024,
-            Unit::PB => self.size * 1024 * 1024 * 1024 * 1024 * 1024,
-            Unit::EB => self.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-            Unit::ZB => self.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-            Unit::YB => self.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+impl From<usize> for DataSize {
+    fn from(size: usize) -> Self {
+        return DataSize {
+            size: size,
+            unit: Unit::B,
+        };
+    }
+}
+
+impl From<DataSize> for usize {
+    fn from(data_size: DataSize) -> Self {
+        match data_size.unit {
+            Unit::B => data_size.size,
+            Unit::KB => data_size.size * 1024,
+            Unit::MB => data_size.size * 1024 * 1024,
+            Unit::GB => data_size.size * 1024 * 1024 * 1024,
+            Unit::TB => data_size.size * 1024 * 1024 * 1024 * 1024,
+            Unit::PB => data_size.size * 1024 * 1024 * 1024 * 1024 * 1024,
+            Unit::EB => data_size.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+            Unit::ZB => data_size.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+            Unit::YB => data_size.size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
         }
     }
 }
