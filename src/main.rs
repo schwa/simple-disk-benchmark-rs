@@ -1,15 +1,15 @@
-use anyhow::Result;
 use bytesize::ByteSize;
 use clap::Parser;
 use clap_verbosity_flag;
 use enum_display_derive::Display;
-use indicatif::{ProgressBar, ProgressStyle};
-use simple_disk_benchmark::*;
+
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::vec;
 //
+mod support;
+use support::*;
 
 mod colored_markup;
 use colored_markup::*;
@@ -51,25 +51,14 @@ struct Args {
     verbose: clap_verbosity_flag::Verbosity,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Display, clap::ValueEnum)]
 enum Mode {
     All,
     Read,
     Write,
 }
 
-impl From<&str> for Mode {
-    fn from(s: &str) -> Self {
-        match s {
-            "all" => Mode::All,
-            "read" => Mode::Read,
-            "write" => Mode::Write,
-            _ => panic!(),
-        }
-    }
-}
-
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     simple_logger::SimpleLogger::new()
@@ -86,6 +75,14 @@ fn main() {
     } else {
         args.mode.clone()
     };
+    let modes = modes
+        .iter()
+        .map(|m| match m {
+            Mode::Read => ReadWrite::Read,
+            Mode::Write => ReadWrite::Write,
+            Mode::All => unreachable!(),
+        })
+        .collect::<Vec<ReadWrite>>();
 
     let style_sheet = StyleSheet::parse(
         "
@@ -110,64 +107,36 @@ fn main() {
     );
     println!();
 
-    let runs: Vec<Run> = modes
-        .iter()
-        .map(|mode| Run::run(mode, &args).expect("Run failed."))
-        .collect();
+    let options = SessionOptions {
+        modes: modes,
+        path: args.path,
+        file_size: args.file_size.to_bytes() as usize,
+        block_size: args.block_size.to_bytes() as usize,
+        cycles: args.cycles as usize,
+        no_delete: args.no_delete,
+    };
+    let session = Session { options };
+    let result = session.main().expect("Session failed.");
 
-    for run in runs.iter() {
+    for run in result.runs.iter() {
         run.display_result(&style_sheet);
     }
+
+    Ok(())
 }
 
-struct Run {
-    mode: ReadWrite,
-    measurements: Vec<Measurement<u64>>,
+trait RunDisplay {
+    fn display_result(&self, style_sheet: &StyleSheet);
 }
 
-impl Run {
-    fn run(mode: &Mode, args: &Args) -> Result<Self> {
-        let mode = match mode {
-            Mode::Read => ReadWrite::Read,
-            Mode::Write => ReadWrite::Write,
-            _ => panic!(),
-        };
-
-        let file_size = args.file_size.to_bytes();
-        let progress = ProgressBar::new(file_size as u64 * args.cycles as u64);
-        progress.set_style(
-            ProgressStyle::with_template(
-                "{prefix:5.green} {spinner} {elapsed_precise} / {eta_precise} {bar:50.green/white} {bytes:9} {msg}",
-            )
-            .expect("Failed to create progress style.")
-            .progress_chars("#-"),
-        );
-        progress.set_prefix(format!("{}", mode));
-
-        let file_size = args.file_size.to_bytes();
-        let block_size = args.block_size.to_bytes();
-
-        let mut file = prepare_file(&args.path, file_size)?;
-        let mut buffer: Vec<u8> = vec![0; block_size];
-        let measurements = process_cycles(&mode, &mut file, args.cycles, &mut buffer, &progress)?;
-        drop(file);
-
-        if !args.no_delete {
-            log::info!("Deleting test file {}.", args.path.display());
-            std::fs::remove_file(&args.path)?;
-        }
-
-        println!();
-
-        Ok(Self { mode, measurements })
-    }
-
+impl RunDisplay for RunResult {
     fn display_result(&self, style_sheet: &StyleSheet) {
         let timings = self
-            .measurements
+            .cycle_results
             .iter()
-            .map(|m| m.per_sec())
+            .map(|r| r.bytes as f64 / r.elapsed)
             .collect::<Vec<f64>>();
+        log::info!("Timings: {:?}", timings);
         let mean = statistical::mean(&timings);
         let median = statistical::median(&timings);
         let standard_deviation = statistical::standard_deviation(&timings, Some(mean));

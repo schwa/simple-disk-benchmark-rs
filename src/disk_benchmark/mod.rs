@@ -1,215 +1,235 @@
 use anyhow::{Ok, Result};
 use bytesize::ByteSize;
 use enum_display_derive::Display;
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
+use itertools::Itertools;
 use rand::RngCore;
-use std::fmt::Display;
-use std::fs::File;
-use std::io::{Read, Seek, Write};
-use std::os::fd::{AsRawFd, FromRawFd};
-use std::os::unix::ffi::OsStrExt;
-use std::path::PathBuf;
-use std::vec;
+use std::{
+    fmt::Display,
+    fs::File,
+    io::{Read, Seek, Write},
+    path::PathBuf,
+    vec,
+};
 
-pub fn prepare_file(path: &PathBuf, file_size: usize) -> Result<File> {
-    log::info!(
-        "Preparing test file {}, size: {}.",
-        path.display(),
-        file_size
-    );
-    let mut buffer = vec![0; file_size];
-    let mut rng = rand::thread_rng();
-    rng.fill_bytes(&mut buffer);
+mod support;
+use support::*;
 
-    if path.exists() {
-        std::fs::remove_file(path)?;
-    }
+// MARK: -
 
-    let mut file = File::open_for_benchmarking(&path)?;
-    file.set_nocache()?;
-    log::info!(
-        "Writing {} bytes to {}",
-        ByteSize(file_size as u64),
-        path.display()
-    );
-
-    let (elapsed, result) = measure(|| {
-        file.write(&buffer)?;
-        file.sync_all()?;
-        return Ok(());
-    });
-    log::info!(
-        "Wrote {} in {:.3}s ({}/s)",
-        ByteSize(file_size as u64),
-        elapsed,
-        ByteSize((file_size as f64 / elapsed) as u64)
-    );
-    result?;
-
-    return Ok(file);
-}
-
-#[derive(Display, PartialEq)]
+#[derive(Display, PartialEq, Debug, Clone)]
 pub enum ReadWrite {
     Read,
     Write,
 }
 
-pub fn process_cycles(
-    mode: &ReadWrite,
-    file: &mut File,
-    cycles: i32,
-    buffer: &mut [u8],
-    progress: &ProgressBar,
-) -> Result<Vec<Measurement<u64>>> {
-    log::info!(
-        "read: cycles={} / block_size={}",
-        cycles,
-        ByteSize(buffer.len() as u64)
-    );
-    if mode == &ReadWrite::Write {
-        let mut rng = rand::thread_rng();
-        rng.fill_bytes(buffer);
-    }
-    let mut measurements = Vec::new();
-    let file_size = file.metadata()?.len();
-    progress.inc(0);
-    for _ in 0..cycles {
-        let (measurement, result) = Measurement::measure(file_size, || {
-            file.seek(std::io::SeekFrom::Start(0))?;
-            let ops = file_size / buffer.len() as u64;
-            for _ in 0..ops {
-                match mode {
-                    ReadWrite::Read => {
-                        let count = file.read(buffer)?;
-                        if count == 0 {
-                            panic!();
-                        }
-                    }
-                    ReadWrite::Write => {
-                        file.write(buffer)?;
-                    }
-                }
-                progress.inc(buffer.len() as u64);
-            }
-            return Ok(());
-        });
-        result?;
-        measurements.push(measurement);
-    }
-    return Ok(measurements);
-}
-
-pub fn measure<F, R>(f: F) -> (f64, R)
-where
-    F: FnOnce() -> R,
-{
-    let start = std::time::Instant::now();
-    let result = f();
-    let elapsed = start.elapsed().as_secs_f64();
-    return (elapsed, result);
+#[derive(Debug)]
+pub struct SessionOptions {
+    pub modes: Vec<ReadWrite>,
+    pub path: PathBuf,
+    pub file_size: usize,
+    pub block_size: usize,
+    pub cycles: usize,
+    pub no_delete: bool,
 }
 
 #[derive(Debug)]
-pub struct Measurement<V> {
-    pub value: V,
+pub struct SessionResult {
+    pub runs: Vec<RunResult>,
+}
+
+#[derive(Debug)]
+pub struct Session {
+    pub options: SessionOptions,
+}
+
+// MARK: -
+
+#[derive(Debug)]
+pub struct RunOptions<'a> {
+    pub session_options: &'a SessionOptions,
+    pub mode: &'a ReadWrite,
+}
+
+#[derive(Debug)]
+pub struct RunResult {
+    pub mode: ReadWrite,
+    pub cycle_results: Vec<CycleResult>,
+}
+
+#[derive(Debug)]
+pub struct Run<'a> {
+    pub options: &'a RunOptions<'a>,
+}
+
+// MARK: -
+
+#[derive(Debug)]
+pub struct CycleOptions<'a> {
+    pub run_options: &'a RunOptions<'a>,
+    pub progress: &'a ProgressBar,
+}
+
+#[derive(Debug)]
+pub struct CycleResult {
+    pub bytes: usize,
     pub elapsed: f64,
 }
 
-impl Measurement<u64> {
-    pub fn measure<F, R>(value: u64, f: F) -> (Measurement<u64>, R)
-    where
-        F: FnOnce() -> R,
-    {
-        let start = std::time::Instant::now();
-        let result = f();
-        let elapsed = start.elapsed().as_secs_f64();
-        let measurement = Measurement {
-            value: value,
-            elapsed: elapsed,
+pub struct Cycle<'a> {
+    pub options: &'a CycleOptions<'a>,
+}
+
+// MARL: -
+
+impl Session {
+    pub fn main(&self) -> Result<SessionResult> {
+        let runs_results: Vec<RunResult> = self
+            .options
+            .modes
+            .iter()
+            .map(|mode| {
+                let run_options = RunOptions {
+                    session_options: &self.options,
+                    mode: mode,
+                };
+                let run = Run {
+                    options: &run_options,
+                };
+                let result = run.main().expect("TODO");
+                return result;
+            })
+            .collect();
+        let result = SessionResult { runs: runs_results };
+        return Ok(result);
+    }
+}
+
+impl<'a> Run<'a> {
+    pub fn main(&self) -> Result<RunResult> {
+        let session_options = &self.options.session_options;
+
+        let progress =
+            ProgressBar::new((session_options.file_size * session_options.cycles) as u64);
+        progress.set_style(
+        ProgressStyle::with_template(
+            "{prefix:5.green} {spinner} {elapsed_precise} / {eta_precise} {bar:50.green/white} {bytes:9} {msg}",
+        )
+        .expect("Failed to create progress style.")
+        .progress_chars("#-"),
+    );
+        progress.set_prefix(format!("{}", self.options.mode));
+
+        let mut buffer = vec![0; session_options.block_size];
+
+        if self.options.mode == &ReadWrite::Write {
+            let mut rng = rand::thread_rng();
+            rng.fill_bytes(&mut buffer);
+        }
+
+        let cycle_options = CycleOptions {
+            run_options: &self.options,
+            progress: &progress,
         };
-        return (measurement, result);
-    }
 
-    pub fn per_sec(&self) -> f64 {
-        return self.value as f64 / self.elapsed;
-    }
-}
+        let mut file = self.prepare_file(&session_options.path, session_options.file_size)?;
 
-trait DiskBenchmark {
-    fn open_for_benchmarking(path: &PathBuf) -> Result<File>;
-    fn set_nocache(&self) -> Result<()>;
-}
+        let results = (0..session_options.cycles).map(|cycle_index| {
+            log::info!("Cycle {} of {}", cycle_index + 1, session_options.cycles);
+            let cycle = Cycle {
+                options: &cycle_options,
+            };
+            cycle.main(&mut file, &mut buffer)
+        });
 
-#[cfg(target_os = "windows")]
-impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
-        File::options()
-            .create(true)
-            .read(true)
-            .write(true)
-            .open(&path)
-            .map_err(|e| e.into())
-    }
-
-    fn set_nocache(&self) -> Result<()> {
-        Ok(())
-    }
-}
-
-#[cfg(target_os = "linux")]
-impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
-        log::info!("Opening using posix::open");
-        unsafe {
-            let fd = libc::open(
-                path.as_os_str().as_bytes().as_ptr() as *const u8,
-                libc::O_CREAT | libc::O_RDWR | libc::O_DIRECT,
-                0o644,
-            );
-            if fd == -1 {
-                return Err(std::io::Error::last_os_error().into());
-            }
-            Ok(File::from_raw_fd(fd))
+        if !session_options.no_delete {
+            log::info!("Deleting test file {}.", session_options.path.display());
+            std::fs::remove_file(&session_options.path)?;
         }
+
+        let result = RunResult {
+            mode: self.options.mode.to_owned(),
+            cycle_results: results.collect::<Result<Vec<CycleResult>>>()?,
+        };
+        Ok(result)
     }
 
-    fn set_nocache(&self) -> Result<()> {
-        Ok(())
+    pub fn prepare_file(&self, path: &PathBuf, file_size: usize) -> Result<File> {
+        log::info!(
+            "Preparing test file {}, size: {}.",
+            path.display(),
+            file_size
+        );
+        let mut buffer = vec![0; file_size];
+        let mut rng = rand::thread_rng();
+        rng.fill_bytes(&mut buffer);
+
+        if path.exists() {
+            std::fs::remove_file(path)?;
+        }
+
+        let mut file = File::open_for_benchmarking(&path)?;
+        file.set_nocache()?;
+        log::info!(
+            "Writing {} bytes to {}",
+            ByteSize(file_size as u64),
+            path.display()
+        );
+
+        let (elapsed, result) = measure(|| {
+            file.write(&buffer)?;
+            file.sync_all()?;
+            return Ok(());
+        });
+        log::info!(
+            "Wrote {} in {:.3}s ({}/s)",
+            ByteSize(file_size as u64),
+            elapsed,
+            ByteSize((file_size as f64 / elapsed) as u64)
+        );
+        result?;
+
+        return Ok(file);
     }
 }
 
-#[cfg(target_os = "macos")]
-impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf) -> Result<File> {
-        log::info!("Opening using posix::open");
-        unsafe {
-            let fd = libc::open(
-                path.as_os_str().as_bytes().as_ptr() as *const i8,
-                libc::O_CREAT | libc::O_RDWR,
-                0o644,
-            );
-            if fd == -1 {
-                return Err(std::io::Error::last_os_error().into());
-            }
-            Ok(File::from_raw_fd(fd))
-        }
-    }
+impl<'a> Cycle<'a> {
+    fn main(&self, file: &'a mut File, buffer: &'a mut Vec<u8>) -> Result<CycleResult> {
+        let run_options = &self.options.run_options;
+        let session_options = &run_options.session_options;
 
-    fn set_nocache(&self) -> Result<()> {
-        let fd = self.as_raw_fd();
-        unsafe {
-            log::info!("Setting F_NOCACHE on fd={}", fd);
-            let r = libc::fcntl(fd, libc::F_NOCACHE, 1);
-            if r == -1 {
-                return Err(std::io::Error::last_os_error().into());
+        log::info!(
+            "read: cycles={} / block_size={}",
+            session_options.cycles,
+            ByteSize(session_options.block_size as u64)
+        );
+        //let mut measurements = Vec::new();
+        self.options.progress.inc(0);
+
+        file.seek(std::io::SeekFrom::Start(0))?;
+        let ops = session_options.file_size / session_options.block_size;
+
+        let start = std::time::Instant::now();
+        for _ in 0..ops {
+            match run_options.mode {
+                ReadWrite::Read => {
+                    let count = file.read(buffer)?;
+                    if count == 0 {
+                        panic!();
+                    }
+                }
+                ReadWrite::Write => {
+                    file.write(&buffer)?;
+                }
             }
-            log::info!("Setting F_GLOBAL_NOCACHE on fd={}", fd);
-            let r = libc::fcntl(fd, libc::F_GLOBAL_NOCACHE, 1);
-            if r == -1 {
-                return Err(std::io::Error::last_os_error().into());
-            }
+            self.options.progress.inc(session_options.block_size as u64);
         }
-        Ok(())
+        let elapsed = start.elapsed().as_secs_f64();
+
+        let result = CycleResult {
+            bytes: session_options.file_size,
+            elapsed,
+        };
+        return Ok(result);
     }
 }

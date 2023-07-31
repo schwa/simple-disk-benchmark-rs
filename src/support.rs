@@ -1,8 +1,5 @@
 use anyhow::{anyhow, Result};
 
-mod colored_markup;
-mod disk_benchmark;
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Unit {
     B,
