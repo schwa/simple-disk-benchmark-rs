@@ -1,8 +1,9 @@
-use anyhow::ensure;
+use anyhow::{ensure, Ok};
 use bytesize::ByteSize;
 use clap::Parser;
 use clap_verbosity_flag::*;
 use enum_display_derive::Display;
+use minijinja::{context, Environment};
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::path::PathBuf;
@@ -111,29 +112,15 @@ fn main() -> anyhow::Result<()> {
         })
         .collect::<Vec<ReadWrite>>();
 
-    let style_sheet = StyleSheet::parse(
-        "
-        mode { foreground: red }
-        speed { foreground: cyan }
-        size { foreground: green }
-        num { foreground: yellow }
-        ",
-    )
-    .expect("Failed to parse stylesheet.");
-
-    println!(
-        "{}",
-        cmarkup!(style_sheet, "Cycles <num>{}</num>, ", args.cycles)
-    );
-    println!(
-        "{}",
-        cmarkup!(style_sheet, "Block Size <size>{}</size>, ", args.block_size)
-    );
-    println!(
-        "{}",
-        cmarkup!(style_sheet, "File Size <size>{}</size>, ", args.file_size)
-    );
-    println!();
+    let template = "Cycles: <num>{{ cycles }}</num>
+Block Size: <size>{{ block_size }}</size>
+File Size: <size>{{ file_size }}</size>";
+    let context = context! {
+        cycles => args.cycles,
+        block_size => args.block_size.to_string(),
+        file_size => args.file_size.to_string(),
+    };
+    render(&template, &context)?;
 
     let options = SessionOptions {
         modes: modes,
@@ -148,18 +135,18 @@ fn main() -> anyhow::Result<()> {
     let result = session.main().expect("Session failed.");
 
     for run in result.runs.iter() {
-        run.display_result(&style_sheet);
+        run.display_result();
     }
 
     Ok(())
 }
 
 trait RunDisplay {
-    fn display_result(&self, style_sheet: &StyleSheet);
+    fn display_result(&self);
 }
 
 impl RunDisplay for RunResult {
-    fn display_result(&self, style_sheet: &StyleSheet) {
+    fn display_result(&self) {
         let timings = self
             .cycle_results
             .iter()
@@ -172,29 +159,37 @@ impl RunDisplay for RunResult {
         let min = min(&timings);
         let max = max(&timings);
 
-        println!();
-        println!(
-            "{}",
-            cmarkup!(style_sheet, "Mode: <mode>{}</mode>", self.mode)
-        );
-        println!(
-            "{}",
-            cmarkup!(
-                style_sheet,
-                "Mean: <speed>{}/s</speed>, Medium: <speed>{}/s</speed>, Standard Deviation Ø: <speed>{}/s</speed>",
-                ByteSize(mean as u64),
-                ByteSize(median as u64),
-                ByteSize(standard_deviation as u64)
-            )
-        );
-        println!(
-            "{}",
-            cmarkup!(
-                style_sheet,
-                "Min: <speed>{}/s</speed>, Max: <speed>{}/s</speed>",
-                ByteSize(min as u64),
-                ByteSize(max as u64)
-            )
-        );
+        let template = "Mode: <mode>{{mode}}</mode>
+Mean: <speed>{{mean}}</speed>, Median: <speed>{{median}}</speed>, Standard Deviation Ø: <speed>{{stddev}}</speed>
+Min: <speed>{{min}}</speed>, Max: <speed>{{max}}</speed>";
+        let context = context! {
+            mode => self.mode.to_string(),
+            mean => ByteSize(mean as u64).to_string(),
+            median => ByteSize(median as u64).to_string(),
+            stddev => ByteSize(standard_deviation as u64).to_string(),
+            min => ByteSize(min as u64).to_string(),
+            max => ByteSize(max as u64).to_string(),
+        };
+        render(&template, &context).unwrap();
     }
+}
+
+fn render(template: &str, context: &minijinja::value::Value) -> anyhow::Result<()> {
+    let style_sheet = StyleSheet::parse(
+        "
+        mode { foreground: red }
+        speed { foreground: cyan }
+        size { foreground: green }
+        num { foreground: yellow }
+        ",
+    )
+    .expect("Failed to parse stylesheet.");
+
+    let mut env = Environment::new();
+    env.add_template("template", template).unwrap();
+    let tmpl = env.get_template("template").unwrap();
+    let render = tmpl.render(context).unwrap();
+    println!("{}", style_sheet.render(&render)?);
+
+    Ok(())
 }

@@ -9,6 +9,7 @@
     "Hashset",
     "indicatif",
     "libc",
+    "minijinja",
     "multispace",
     "NOCACHE",
     "posix",
@@ -16,8 +17,10 @@
     "RUSR",
     "rustix",
     "setfd",
+    "stddev",
     "stylesheet",
     "testfile",
+    "tmpl",
     "vals"
   ],
   "rust-analyzer.linkedProjects": [
