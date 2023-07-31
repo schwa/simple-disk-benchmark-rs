@@ -1,4 +1,4 @@
-# simple-disk-benchmark-rs
+# simple-disk-benchmark
 
 A simple disk benchmark tool.
 
@@ -11,7 +11,7 @@ Currently, macOS and Linux are tested. Windows _may_ work but is not tested. Dev
 ## Installation
 
 ```sh
-cargo install simple-disk-benchmark-rs
+cargo install simple-disk-benchmark
 ```
 
 ## Usage
