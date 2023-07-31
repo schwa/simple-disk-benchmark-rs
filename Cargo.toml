@@ -16,7 +16,6 @@ repository = "https://github.com/schwa/simple-disk-benchmark-rs"
 
 [dependencies]
 anyhow = "1.0.72"
-bytesize = "1.2.0"
 clap = { version = "4.3.19", features = ["derive"] }
 clap-verbosity-flag = "2.0.1"
 colored = "2.0.4"

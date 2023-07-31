@@ -1,5 +1,4 @@
 use anyhow::{ensure, Ok};
-use bytesize::ByteSize;
 use clap::Parser;
 use clap_verbosity_flag::*;
 use enum_display_derive::Display;

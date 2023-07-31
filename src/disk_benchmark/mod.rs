@@ -1,5 +1,4 @@
 use anyhow::{Ok, Result};
-use bytesize::ByteSize;
 use enum_display_derive::Display;
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::RngCore;
@@ -13,6 +12,8 @@ use std::{
 
 mod support;
 use support::*;
+
+use crate::support::DataSize;
 
 // MARK: -
 
@@ -205,7 +206,7 @@ impl<'a> Run<'a> {
         }
         log::info!(
             "Writing {} bytes to {}",
-            ByteSize(file_size as u64),
+            DataSize::from(file_size),
             path.display()
         );
 
@@ -216,9 +217,9 @@ impl<'a> Run<'a> {
         });
         log::info!(
             "Wrote {} in {:.3}s ({}/s)",
-            ByteSize(file_size as u64),
+            DataSize::from(file_size),
             elapsed,
-            ByteSize((file_size as f64 / elapsed) as u64)
+            DataSize::from(file_size as f64 / elapsed)
         );
         result?;
 
@@ -236,7 +237,7 @@ impl<'a> Cycle<'a> {
         log::trace!(
             "read: cycles={} / block_size={}",
             session_options.cycles,
-            ByteSize(session_options.block_size as u64)
+            DataSize::from(session_options.block_size)
         );
         if let Some(progress) = self.options.progress {
             progress.inc(0);

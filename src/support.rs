@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use core::fmt::{Debug, Display};
-use core::str::FromStr;
 use num_traits::{Num, NumCast};
 use serde::{Deserialize, Serialize};
 use strum::*;
@@ -47,8 +46,15 @@ where
 // }
 
 impl<N: Num> DataSize<N> {
-    fn new(size: N, unit: Unit) -> Self {
+    pub fn new(size: N, unit: Unit) -> Self {
         DataSize { size, unit }
+    }
+
+    pub fn from_bytes(size: N) -> Self {
+        DataSize {
+            size,
+            unit: Unit::B,
+        }
     }
 }
 
