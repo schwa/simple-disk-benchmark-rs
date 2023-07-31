@@ -113,24 +113,25 @@ fn main() -> anyhow::Result<()> {
 
     let style_sheet = StyleSheet::parse(
         "
-        x { foreground: red; styles: bold }
-        g { foreground: green }
-        r { foreground: cyan }
+        mode { foreground: red }
+        speed { foreground: cyan }
+        size { foreground: green }
+        num { foreground: yellow }
         ",
     )
     .expect("Failed to parse stylesheet.");
 
     println!(
         "{}",
-        cmarkup!(style_sheet, "Cycles <r>{}</r>, ", args.cycles)
+        cmarkup!(style_sheet, "Cycles <num>{}</num>, ", args.cycles)
     );
     println!(
         "{}",
-        cmarkup!(style_sheet, "Block Size <r>{}</r>, ", args.block_size)
+        cmarkup!(style_sheet, "Block Size <size>{}</size>, ", args.block_size)
     );
     println!(
         "{}",
-        cmarkup!(style_sheet, "File Size <r>{}</r>, ", args.file_size)
+        cmarkup!(style_sheet, "File Size <size>{}</size>, ", args.file_size)
     );
     println!();
 
@@ -172,12 +173,15 @@ impl RunDisplay for RunResult {
         let max = max(&timings);
 
         println!();
-        println!("{}", cmarkup!(style_sheet, "Mode: <x>{}</x>", self.mode));
+        println!(
+            "{}",
+            cmarkup!(style_sheet, "Mode: <mode>{}</mode>", self.mode)
+        );
         println!(
             "{}",
             cmarkup!(
                 style_sheet,
-                "Mean: <g>{}/s</g>, Medium: <g>{}/s</g>, Standard Deviation Ø: <r>{}/s</r>",
+                "Mean: <speed>{}/s</speed>, Medium: <speed>{}/s</speed>, Standard Deviation Ø: <speed>{}/s</speed>",
                 ByteSize(mean as u64),
                 ByteSize(median as u64),
                 ByteSize(standard_deviation as u64)
@@ -187,7 +191,7 @@ impl RunDisplay for RunResult {
             "{}",
             cmarkup!(
                 style_sheet,
-                "Min: <g>{}/s</g>, Max: <r>{}/s</r>",
+                "Min: <speed>{}/s</speed>, Max: <speed>{}/s</speed>",
                 ByteSize(min as u64),
                 ByteSize(max as u64)
             )
