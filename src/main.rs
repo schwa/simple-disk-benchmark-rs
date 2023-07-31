@@ -44,9 +44,21 @@ struct Args {
     #[arg(short, long, default_value = "all")]
     mode: Vec<Mode>,
 
+    /// Do not create the test file, the file must already exist.
+    #[arg(long, default_value_t = false)]
+    no_create: bool,
+
     /// Do not delete the test file after the test.
-    #[arg(short, long, default_value_t = false)]
+    #[arg(long, default_value_t = false)]
     no_delete: bool,
+
+    /// Do not display progress bar.
+    #[arg(long, default_value_t = false)]
+    no_progress: bool,
+
+    /// Do not disable the file system cache.
+    #[arg(long, default_value_t = false)]
+    no_disable_cache: bool,
 
     /// Set the log level.
     #[clap(flatten)]
@@ -128,8 +140,11 @@ File Size: <size>{{ file_size }}</size>";
         file_size: args.file_size.to_bytes() as usize,
         block_size: args.block_size.to_bytes() as usize,
         cycles: args.cycles as usize,
+        no_create: args.no_create,
         no_delete: args.no_delete,
         dry_run: args.dry_run,
+        no_progress: args.no_progress,
+        no_disable_cache: args.no_disable_cache,
     };
     let session = Session { options };
     let result = session.main().expect("Session failed.");

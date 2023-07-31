@@ -29,8 +29,11 @@ pub struct SessionOptions {
     pub file_size: usize,
     pub block_size: usize,
     pub cycles: usize,
+    pub no_create: bool,
     pub no_delete: bool,
     pub dry_run: bool,
+    pub no_progress: bool,
+    pub no_disable_cache: bool,
 }
 
 #[derive(Debug)]
@@ -67,7 +70,7 @@ pub struct Run<'a> {
 #[derive(Debug)]
 pub struct CycleOptions<'a> {
     pub run_options: &'a RunOptions<'a>,
-    pub progress: &'a ProgressBar,
+    pub progress: &'a Option<ProgressBar>,
 }
 
 #[derive(Debug)]
@@ -76,11 +79,12 @@ pub struct CycleResult {
     pub elapsed: f64,
 }
 
+#[derive(Debug)]
 pub struct Cycle<'a> {
     pub options: &'a CycleOptions<'a>,
 }
 
-// MARL: -
+// MARK: -
 
 impl Session {
     pub fn main(&self) -> Result<SessionResult> {
@@ -109,16 +113,16 @@ impl<'a> Run<'a> {
     pub fn main(&self) -> Result<RunResult> {
         let session_options = &self.options.session_options;
 
-        let progress =
-            ProgressBar::new((session_options.file_size * session_options.cycles) as u64);
-        progress.set_style(
-        ProgressStyle::with_template(
-            "{prefix:5.green} {spinner} {elapsed_precise} / {eta_precise} {bar:50.green/white} {bytes:9} {msg}",
-        )
-        .expect("Failed to create progress style.")
-        .progress_chars("#-"),
-    );
-        progress.set_prefix(format!("{}", self.options.mode));
+        let mut progress: Option<ProgressBar> = None;
+        if !session_options.no_progress {
+            let p = ProgressBar::new((session_options.file_size * session_options.cycles) as u64);
+            p.set_style(ProgressStyle::with_template("{prefix:5.green} {spinner} {elapsed_precise} / {eta_precise} {bar:50.green/white} {bytes:9} {msg}")
+            .expect("Failed to create progress style.")
+            .progress_chars("#-"),
+            );
+            p.set_prefix(format!("{}", self.options.mode));
+            progress = Some(p);
+        }
 
         let mut buffer = vec![0; session_options.block_size];
 
@@ -132,10 +136,14 @@ impl<'a> Run<'a> {
             progress: &progress,
         };
 
-        let mut file = self.prepare_file(&session_options.path, session_options.file_size)?;
+        let mut file = self.prepare_file(
+            &session_options.path,
+            session_options.file_size,
+            session_options.no_create,
+        )?;
 
         let results = (0..session_options.cycles).map(|cycle_index| {
-            log::info!("Cycle {} of {}", cycle_index + 1, session_options.cycles);
+            log::trace!("Cycle {} of {}", cycle_index + 1, session_options.cycles);
             let cycle = Cycle {
                 options: &cycle_options,
             };
@@ -143,8 +151,15 @@ impl<'a> Run<'a> {
         });
 
         if !session_options.no_delete {
-            log::info!("Deleting test file {}.", session_options.path.display());
-            std::fs::remove_file(&session_options.path)?;
+            if !session_options.no_create {
+                log::info!("Deleting test file {}.", session_options.path.display());
+                std::fs::remove_file(&session_options.path)?;
+            } else {
+                log::info!(
+                    "Not deleting test file {} due to --no-delete option.",
+                    session_options.path.display()
+                );
+            }
         }
 
         let result = RunResult {
@@ -154,22 +169,33 @@ impl<'a> Run<'a> {
         Ok(result)
     }
 
-    pub fn prepare_file(&self, path: &PathBuf, file_size: usize) -> Result<File> {
+    pub fn prepare_file(&self, path: &PathBuf, file_size: usize, no_create: bool) -> Result<File> {
         log::info!(
             "Preparing test file {}, size: {}.",
             path.display(),
             file_size
         );
+
         let mut buffer = vec![0; file_size];
         let mut rng = rand::thread_rng();
         rng.fill_bytes(&mut buffer);
 
         if path.exists() {
-            std::fs::remove_file(path)?;
+            if no_create {
+                log::info!(
+                    "File {} already exists, not removing due to --no-create option.",
+                    path.display()
+                );
+            } else {
+                log::info!("Deleting existing file {}.", path.display());
+                std::fs::remove_file(path)?;
+            }
         }
 
-        let mut file = File::open_for_benchmarking(&path)?;
-        file.set_nocache()?;
+        let mut file = File::open_for_benchmarking(&path, no_create)?;
+        if !self.options.session_options.no_disable_cache {
+            file.set_nocache()?;
+        }
         log::info!(
             "Writing {} bytes to {}",
             ByteSize(file_size as u64),
@@ -200,12 +226,14 @@ impl<'a> Cycle<'a> {
 
         assert!(session_options.file_size > session_options.block_size);
 
-        log::info!(
+        log::trace!(
             "read: cycles={} / block_size={}",
             session_options.cycles,
             ByteSize(session_options.block_size as u64)
         );
-        self.options.progress.inc(0);
+        if let Some(progress) = self.options.progress {
+            progress.inc(0);
+        }
 
         file.seek(std::io::SeekFrom::Start(0))?;
         let ops = session_options.file_size / session_options.block_size;
@@ -229,13 +257,17 @@ impl<'a> Cycle<'a> {
                                 buffer.len()
                             ));
                         }
-                        self.options.progress.inc(session_options.block_size as u64);
+                        if let Some(progress) = self.options.progress {
+                            progress.inc(session_options.block_size as u64);
+                        }
                     }
                 }
                 ReadWrite::Write => {
                     for _ in 0..ops {
                         file.write(buffer)?;
-                        self.options.progress.inc(session_options.block_size as u64);
+                        if let Some(progress) = self.options.progress {
+                            progress.inc(session_options.block_size as u64);
+                        }
                     }
                 }
             }
