@@ -49,7 +49,7 @@ pub fn prepare_file(path: &PathBuf, file_size: usize) -> Result<File> {
     return Ok(file);
 }
 
-#[derive(Display)]
+#[derive(Display, PartialEq)]
 pub enum ReadWrite {
     Read,
     Write,
@@ -67,6 +67,10 @@ pub fn process_cycles(
         cycles,
         ByteSize(buffer.len() as u64)
     );
+    if mode == &ReadWrite::Write {
+        let mut rng = rand::thread_rng();
+        rng.fill_bytes(buffer);
+    }
     let mut measurements = Vec::new();
     let file_size = file.metadata()?.len();
     progress.inc(0);

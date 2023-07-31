@@ -47,7 +47,7 @@ On macOS, the file is opened and F_NO_CACHE and F_GLOBAL_NOCACHE are both set on
 
 * Random seeks instead of just sequential.
 * Multithreaded benchmarking option.
-* Use random bytes instead of zeros for writes
+* ~~Use random bytes instead of zeros for writes~~
 * Test on Windows.
 * Put on homebrew.
 * More documentation.
@@ -59,6 +59,7 @@ On macOS, the file is opened and F_NO_CACHE and F_GLOBAL_NOCACHE are both set on
 * Add a `--no-delete` option to keep the file around after the benchmark.
 * Output data to CSV/Json.
 * Find out what's going on with all the dead_code false positives.
+* Sort out pub/mod stuff.
 
 ## License
 
