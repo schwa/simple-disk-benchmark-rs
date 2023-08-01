@@ -1,12 +1,15 @@
 use serde::{Deserialize, Deserializer, Serialize};
-
 use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+#[cfg(target_os = "macos")]
 impl Volume {
-    pub fn volume_for_path(path: &PathBuf) -> Self {
-        let mount_point = unsafe {
+    pub fn volume_for_path(path: &PathBuf) -> anyhow::Result<Self> {
+        if path.exists() == false {
+            return Err(anyhow::anyhow!("Path {} does not exist", path.display()));
+        }
+        let mount_point: anyhow::Result<String> = unsafe {
             let mut buffer = std::mem::zeroed::<libc::statfs>();
             let r = libc::statfs(
                 path.as_os_str().as_bytes().as_ptr() as *const i8,
@@ -15,32 +18,34 @@ impl Volume {
             if r != 0 {
                 panic!("Failed to statfs: {}", r);
             }
-            buffer.mount_on_name()
+            Ok(buffer.mount_on_name())
         };
-        let mount_point = PathBuf::from_str(&mount_point).unwrap();
-        log::debug!("Mount point: {:?}", mount_point);
-
+        let mount_point = PathBuf::from_str(&mount_point?)?;
         let system_profile_json = std::process::Command::new("system_profiler")
             .args(&["-json", "SPStorageDataType"])
-            .output()
-            .expect("Failed to execute command.")
+            .output()?
             .stdout;
-        let system_profile: SystemProfile = serde_json::from_slice(&system_profile_json).unwrap();
+        let system_profile: SystemProfile = serde_json::from_slice(&system_profile_json)?;
         let volume = system_profile
             .volumes
             .into_iter()
             .find(|volume| volume.mount_point == mount_point)
-            .unwrap();
-        return volume;
+            .ok_or(anyhow::anyhow!(
+                "Failed to find volume for path {}",
+                path.display()
+            ))?;
+        return Ok(volume);
     }
 }
 
+#[cfg(target_os = "macos")]
 #[derive(Debug, Deserialize)]
 struct SystemProfile {
     #[serde(rename = "SPStorageDataType")]
     volumes: Vec<Volume>,
 }
 
+#[cfg(target_os = "macos")]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Volume {
     #[serde(rename = "_name")]
@@ -51,6 +56,7 @@ pub struct Volume {
     physical_drive: PhysicalDrive,
 }
 
+#[cfg(target_os = "macos")]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PhysicalDrive {
     device_name: String,
@@ -63,6 +69,7 @@ pub struct PhysicalDrive {
     smart_status: Option<String>,
 }
 
+#[cfg(target_os = "macos")]
 fn deserialize_yes_or_no<'a, D: Deserializer<'a>>(deserializer: D) -> Result<bool, D::Error> {
     let s = String::deserialize(deserializer)?;
     match s.as_str() {
@@ -74,12 +81,14 @@ fn deserialize_yes_or_no<'a, D: Deserializer<'a>>(deserializer: D) -> Result<boo
         ))),
     }
 }
+#[cfg(target_os = "macos")]
 trait StatFSStuff {
     fn fstype_name(&self) -> String;
     fn mount_on_name(&self) -> String;
     fn mount_from_name(&self) -> String;
 }
 
+#[cfg(target_os = "macos")]
 impl StatFSStuff for libc::statfs {
     fn fstype_name(&self) -> String {
         unsafe {

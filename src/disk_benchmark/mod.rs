@@ -124,7 +124,7 @@ impl Session {
             .collect();
         let result = SessionResult {
             args: std::env::args().collect::<Vec<String>>()[1..].join(" "),
-            volume: Some(Volume::volume_for_path(&self.options.path)),
+            volume: Some(Volume::volume_for_path(&self.options.path)?),
             created: chrono::Local::now(),
             options: &self.options,
 
