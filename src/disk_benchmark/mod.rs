@@ -100,12 +100,13 @@ pub struct Cycle<'a> {
 
 impl Session {
     pub fn main(&self) -> Result<SessionResult> {
-        let mut file = self.prepare_file(
+        let file = self.prepare_file(
             &self.options.path,
             self.options.file_size,
             self.options.no_create,
             self.options.no_disable_cache,
         )?;
+        drop(file);
 
         let runs_results: Vec<RunResult> = self
             .options
@@ -119,7 +120,7 @@ impl Session {
                 let run = Run {
                     options: &run_options,
                 };
-                let result = run.main(&mut file).expect("TODO");
+                let result = run.main().expect("TODO");
                 return result;
             })
             .collect();
@@ -172,10 +173,7 @@ impl Session {
             }
         }
 
-        let mut file = File::open_for_benchmarking(&path, no_create, no_disable_cache)?;
-        if !self.options.no_disable_cache {
-            file.set_nocache()?;
-        }
+        let mut file = File::create(path)?;
         log::info!(
             "Writing {} bytes to {}",
             DataSize::from(file_size),
@@ -203,7 +201,8 @@ impl Session {
 }
 
 impl<'a> Run<'a> {
-    pub fn main(&self, file: &'a mut File) -> Result<RunResult> {
+    pub fn main(&self) -> Result<RunResult> {
+        log::debug!("Starting run.");
         let session_options = &self.options.session_options;
 
         let mut progress: Option<ProgressBar> = None;
@@ -235,10 +234,11 @@ impl<'a> Run<'a> {
                 let cycle = Cycle {
                     options: &cycle_options,
                 };
-                cycle.main(file, &mut buffer)
+                cycle.main(&mut buffer)
             })
             .collect::<Result<Vec<CycleResult>>>()?;
         let result = RunResult::new(self.options.mode.to_owned(), results);
+        log::debug!("Ending run.");
         Ok(result)
     }
 }
@@ -255,11 +255,19 @@ impl RunResult {
 }
 
 impl<'a> Cycle<'a> {
-    fn main(&self, file: &'a mut File, buffer: &'a mut Vec<u8>) -> Result<CycleResult> {
+    fn main(&self, buffer: &'a mut Vec<u8>) -> Result<CycleResult> {
+        log::debug!("Starting cycle.");
         let run_options = &self.options.run_options;
         let session_options = &run_options.session_options;
 
         assert!(session_options.file_size > session_options.block_size);
+
+        log::debug!("Opening file.");
+        let mut file =
+            File::open_for_benchmarking(&session_options.path, session_options.no_disable_cache)?;
+        if !session_options.no_disable_cache {
+            file.set_nocache()?;
+        }
 
         log::trace!(
             "read: cycles={} / block_size={}",
@@ -321,6 +329,7 @@ impl<'a> Cycle<'a> {
             bytes: session_options.file_size,
             elapsed,
         };
+        log::debug!("Ending cycle.");
         return Ok(result);
     }
 }
