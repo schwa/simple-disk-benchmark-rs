@@ -104,7 +104,6 @@ impl Session {
             &self.options.path,
             self.options.file_size,
             self.options.no_create,
-            self.options.no_disable_cache,
         )?;
         drop(file);
 
@@ -148,13 +147,7 @@ impl Session {
         return Ok(result);
     }
 
-    pub fn prepare_file(
-        &self,
-        path: &PathBuf,
-        file_size: usize,
-        no_create: bool,
-        no_disable_cache: bool,
-    ) -> Result<File> {
+    pub fn prepare_file(&self, path: &PathBuf, file_size: usize, no_create: bool) -> Result<File> {
         log::info!(
             "Preparing test file {}, size: {}.",
             path.display(),
@@ -265,9 +258,6 @@ impl<'a> Cycle<'a> {
         log::debug!("Opening file.");
         let mut file =
             File::open_for_benchmarking(&session_options.path, session_options.no_disable_cache)?;
-        if !session_options.no_disable_cache {
-            file.set_nocache()?;
-        }
 
         log::trace!(
             "read: cycles={} / block_size={}",
@@ -278,7 +268,6 @@ impl<'a> Cycle<'a> {
             progress.inc(0);
         }
 
-        file.seek(std::io::SeekFrom::Start(0))?;
         let ops = session_options.file_size / session_options.block_size;
 
         if session_options.dry_run {

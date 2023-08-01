@@ -64,10 +64,10 @@ impl DiskBenchmark for File {
 
 #[cfg(target_os = "macos")]
 impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf, _: bool) -> Result<File> {
+    fn open_for_benchmarking(path: &PathBuf, no_disable_cache: bool) -> Result<File> {
         log::info!("Opening using posix::open");
-        unsafe {
-            let mut oflags = libc::O_RDWR;
+        let file = unsafe {
+            let oflags = libc::O_RDWR;
             let fd = libc::open(
                 path.as_os_str().as_bytes().as_ptr() as *const i8,
                 oflags,
@@ -77,7 +77,11 @@ impl DiskBenchmark for File {
                 return Err(std::io::Error::last_os_error().into());
             }
             Ok(File::from_raw_fd(fd))
+        }?;
+        if !no_disable_cache {
+            file.set_nocache()?;
         }
+        Ok(file)
     }
 
     fn set_nocache(&self) -> Result<()> {
