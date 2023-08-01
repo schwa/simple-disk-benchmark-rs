@@ -2,7 +2,7 @@ use anyhow::{Ok, Result};
 use enum_display_derive::Display;
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::RngCore;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
     fs::File,
@@ -19,13 +19,13 @@ use crate::volume::*;
 
 // MARK: -
 
-#[derive(Display, PartialEq, Debug, Clone, Serialize)]
+#[derive(Display, PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub enum ReadWrite {
     Read,
     Write,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SessionOptions {
     pub modes: Vec<ReadWrite>,
     pub path: PathBuf,
@@ -39,13 +39,13 @@ pub struct SessionOptions {
     pub no_disable_cache: bool,
 }
 
-#[derive(Debug, Serialize)]
-pub struct SessionResult<'a> {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SessionResult {
     pub args: String,
     pub created: chrono::DateTime<chrono::Local>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub volume: Option<Volume>,
-    pub options: &'a SessionOptions,
-
+    pub options: SessionOptions,
     pub runs: Vec<RunResult>,
 }
 
@@ -62,7 +62,7 @@ pub struct RunOptions<'a> {
     pub mode: &'a ReadWrite,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct RunResult {
     pub mode: ReadWrite,
     pub cycle_results: Vec<CycleResult>,
@@ -83,7 +83,7 @@ pub struct CycleOptions<'a> {
     pub progress: &'a Option<ProgressBar>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CycleResult {
     pub cycle: usize,
     pub bytes: usize,
@@ -124,9 +124,9 @@ impl Session {
             .collect();
         let result = SessionResult {
             args: std::env::args().collect::<Vec<String>>()[1..].join(" "),
-            volume: Some(Volume::volume_for_path(&self.options.path)?),
+            volume: Volume::volume_for_path(&self.options.path).ok(),
             created: chrono::Local::now(),
-            options: &self.options,
+            options: self.options.clone(),
 
             runs: runs_results,
         };
@@ -318,7 +318,7 @@ impl<'a> Cycle<'a> {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct RunStatistics {
     pub mean: f64,
     pub median: f64,

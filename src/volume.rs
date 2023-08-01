@@ -1,7 +1,40 @@
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
 use std::str::FromStr;
+
+#[cfg(target_os = "macos")]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Volume {
+    #[serde(rename = "_name")]
+    name: String,
+    bsd_name: String,
+    file_system: String,
+    mount_point: PathBuf,
+    physical_drive: PhysicalDrive,
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PhysicalDrive {
+    device_name: String,
+    // #[serde(deserialize_with = "deserialize_yes_or_no")]
+    // is_internal_disk: bool,
+    media_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    medium_type: Option<String>,
+    partition_map_type: String,
+    protocol: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    smart_status: Option<String>,
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Debug, Deserialize)]
+struct SystemProfile {
+    #[serde(rename = "SPStorageDataType")]
+    volumes: Vec<Volume>,
+}
 
 #[cfg(target_os = "macos")]
 impl Volume {
@@ -38,49 +71,23 @@ impl Volume {
     }
 }
 
-#[cfg(target_os = "macos")]
-#[derive(Debug, Deserialize)]
-struct SystemProfile {
-    #[serde(rename = "SPStorageDataType")]
-    volumes: Vec<Volume>,
-}
+// #[cfg(target_os = "macos")]
+// fn deserialize_yes_or_no<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
+//     // if let Ok(b) = bool::deserialize(deserializer) {
+//     //     Ok(b)
+//     // } else {
+//     let s = String::deserialize(deserializer)?;
+//     match s.as_str() {
+//         "yes" => Ok(true),
+//         "no" => Ok(false),
+//         _ => Err(serde::de::Error::custom(format!(
+//             "Expected Yes or No, got {}",
+//             s
+//         ))),
+//         // }
+//     }
+// }
 
-#[cfg(target_os = "macos")]
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Volume {
-    #[serde(rename = "_name")]
-    name: String,
-    bsd_name: String,
-    file_system: String,
-    mount_point: PathBuf,
-    physical_drive: PhysicalDrive,
-}
-
-#[cfg(target_os = "macos")]
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PhysicalDrive {
-    device_name: String,
-    #[serde(deserialize_with = "deserialize_yes_or_no")]
-    is_internal_disk: bool,
-    media_name: String,
-    medium_type: Option<String>,
-    partition_map_type: String,
-    protocol: String,
-    smart_status: Option<String>,
-}
-
-#[cfg(target_os = "macos")]
-fn deserialize_yes_or_no<'a, D: Deserializer<'a>>(deserializer: D) -> Result<bool, D::Error> {
-    let s = String::deserialize(deserializer)?;
-    match s.as_str() {
-        "yes" => Ok(true),
-        "no" => Ok(false),
-        _ => Err(serde::de::Error::custom(format!(
-            "Expected Yes or No, got {}",
-            s
-        ))),
-    }
-}
 #[cfg(target_os = "macos")]
 trait StatFSStuff {
     fn fstype_name(&self) -> String;
@@ -96,7 +103,6 @@ impl StatFSStuff for libc::statfs {
                 .to_string()
         }
     }
-
     fn mount_on_name(&self) -> String {
         unsafe {
             String::from_utf8_lossy(std::ffi::CStr::from_ptr(self.f_mntonname.as_ptr()).to_bytes())
@@ -110,5 +116,18 @@ impl StatFSStuff for libc::statfs {
             )
             .to_string()
         }
+    }
+}
+
+// MARK: -
+
+#[cfg(target_os = "linux")]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Volume {}
+
+#[cfg(target_os = "linux")]
+impl Volume {
+    pub fn volume_for_path(_: &PathBuf) -> anyhow::Result<Self> {
+        return Err(anyhow::anyhow!("Not implemented."));
     }
 }

@@ -71,7 +71,7 @@ struct Args {
     dry_run: bool,
 
     /// Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds.
-    #[arg(long, value_name = "FILE")]
+    #[arg(short('j'), long, value_name = "FILE")]
     export_json: Option<PathBuf>,
 }
 
@@ -100,6 +100,10 @@ fn main() -> anyhow::Result<()> {
         "File size ({}) is smaller than block size ({}).",
         args.file_size,
         args.block_size
+    );
+    ensure!(
+        args.cycles >= 2,
+        "Number of cycles must be at least two. (`--cycles 2`)"
     );
     ensure!(file_size > 0, "File size must be greater than zero.");
     ensure!(block_size > 0, "Block size must be greater than zero.");
@@ -170,9 +174,18 @@ File Size: <size>{{ file_size }}</size>";
     }
 
     if let Some(path) = args.export_json {
-        //let report = Report::new(&session.options, &session_result);
-        let file = File::create(path)?;
-        serde_json::to_writer_pretty(file, &session_result)?;
+        if path.exists() {
+            log::warn!("File {} already exists, appending.", path.display());
+            let mut file = File::open(&path)?;
+            let mut reports: Vec<SessionResult> = serde_json::from_reader(&mut file)?;
+            reports.push(session_result);
+            let file = File::create(path)?;
+            serde_json::to_writer_pretty(file, &reports)?;
+        } else {
+            let reports = vec![session_result];
+            let file = File::create(path)?;
+            serde_json::to_writer_pretty(file, &reports)?;
+        }
     }
 
     Ok(())
