@@ -34,12 +34,14 @@ Options:
       --no-progress             Do not display progress bar
       --no-disable-cache        Do not disable the file system cache
   -j, --export-json <FILE>      Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds
+  -r, --random-seek             Seek to a random position in the file before each read/write
+  -X, --no-chart                Do not display a bar chart of the run timings
   -d, --dry-run                 Do not actually perform benchmarks to the disk (file is still created and/or deleted)
   -v, --verbose...              More output per occurrence
   -q, --quiet...                Less output per occurrence
   -h, --help                    Print help
   -V, --version                 Print version
-  ```
+```
 
 ## Methodology
 
