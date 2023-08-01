@@ -3,7 +3,7 @@ use clap::Parser;
 use clap_verbosity_flag::*;
 use enum_display_derive::Display;
 use minijinja::{context, Environment};
-use serde::Serialize;
+
 use serde_json;
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -11,14 +11,14 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::vec;
 //
-mod support;
-use support::*;
-
 mod colored_markup;
-use colored_markup::*;
-
 mod disk_benchmark;
+mod support;
+mod volume;
+
+use colored_markup::*;
 use disk_benchmark::*;
+use support::*;
 
 // Based partly on: From <https://www.geschke-online.de/sdb/sdb.1.html>
 
@@ -170,9 +170,9 @@ File Size: <size>{{ file_size }}</size>";
     }
 
     if let Some(path) = args.export_json {
-        let report = Report::new(&session.options, &session_result);
+        //let report = Report::new(&session.options, &session_result);
         let file = File::create(path)?;
-        serde_json::to_writer_pretty(file, &report)?;
+        serde_json::to_writer_pretty(file, &session_result)?;
     }
 
     Ok(())
@@ -218,23 +218,4 @@ fn render(template: &str, context: &minijinja::value::Value) -> anyhow::Result<(
     println!("{}", style_sheet.render(&render)?);
 
     Ok(())
-}
-
-#[derive(Serialize)]
-struct Report<'a> {
-    args: String,
-    created: chrono::DateTime<chrono::Local>,
-    options: &'a SessionOptions,
-    runs: &'a Vec<RunResult>,
-}
-
-impl<'a> Report<'a> {
-    fn new(session: &'a SessionOptions, result: &'a SessionResult) -> Self {
-        Self {
-            args: std::env::args().collect::<Vec<String>>()[1..].join(" "),
-            created: chrono::Local::now(),
-            options: session,
-            runs: &result.runs,
-        }
-    }
 }

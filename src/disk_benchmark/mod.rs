@@ -15,6 +15,7 @@ mod support;
 use support::*;
 
 use crate::support::*;
+use crate::volume::*;
 
 // MARK: -
 
@@ -39,7 +40,12 @@ pub struct SessionOptions {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SessionResult {
+pub struct SessionResult<'a> {
+    pub args: String,
+    pub created: chrono::DateTime<chrono::Local>,
+    pub volume: Option<Volume>,
+    pub options: &'a SessionOptions,
+
     pub runs: Vec<RunResult>,
 }
 
@@ -93,6 +99,13 @@ pub struct Cycle<'a> {
 
 impl Session {
     pub fn main(&self) -> Result<SessionResult> {
+        let mut file = self.prepare_file(
+            &self.options.path,
+            self.options.file_size,
+            self.options.no_create,
+            self.options.no_disable_cache,
+        )?;
+
         let runs_results: Vec<RunResult> = self
             .options
             .modes
@@ -105,17 +118,91 @@ impl Session {
                 let run = Run {
                     options: &run_options,
                 };
-                let result = run.main().expect("TODO");
+                let result = run.main(&mut file).expect("TODO");
                 return result;
             })
             .collect();
-        let result = SessionResult { runs: runs_results };
+        let result = SessionResult {
+            args: std::env::args().collect::<Vec<String>>()[1..].join(" "),
+            volume: Some(Volume::volume_for_path(&self.options.path)),
+            created: chrono::Local::now(),
+            options: &self.options,
+
+            runs: runs_results,
+        };
+
+        if !self.options.no_delete {
+            if !self.options.no_create {
+                log::info!("Deleting test file {}.", self.options.path.display());
+                std::fs::remove_file(&self.options.path)?;
+            } else {
+                log::info!(
+                    "Not deleting test file {} due to --no-delete option.",
+                    self.options.path.display()
+                );
+            }
+        }
+
         return Ok(result);
+    }
+
+    pub fn prepare_file(
+        &self,
+        path: &PathBuf,
+        file_size: usize,
+        no_create: bool,
+        no_disable_cache: bool,
+    ) -> Result<File> {
+        log::info!(
+            "Preparing test file {}, size: {}.",
+            path.display(),
+            file_size
+        );
+
+        if path.exists() {
+            if no_create {
+                log::info!(
+                    "File {} already exists, not removing due to --no-create option.",
+                    path.display()
+                );
+            } else {
+                log::info!("Deleting existing file {}.", path.display());
+                std::fs::remove_file(path)?;
+            }
+        }
+
+        let mut file = File::open_for_benchmarking(&path, no_create, no_disable_cache)?;
+        if !self.options.no_disable_cache {
+            file.set_nocache()?;
+        }
+        log::info!(
+            "Writing {} bytes to {}",
+            DataSize::from(file_size),
+            path.display()
+        );
+
+        let (elapsed, result) = measure(|| {
+            let mut buffer = vec![0; file_size];
+            let mut rng = rand::thread_rng();
+            rng.fill_bytes(&mut buffer);
+            file.write(&buffer)?;
+            file.sync_all()?;
+            return Ok(());
+        });
+        log::info!(
+            "Wrote {} in {:.3}s ({}/s)",
+            DataSize::from(file_size),
+            elapsed,
+            DataSize::from(file_size as f64 / elapsed)
+        );
+        result?;
+
+        return Ok(file);
     }
 }
 
 impl<'a> Run<'a> {
-    pub fn main(&self) -> Result<RunResult> {
+    pub fn main(&self, file: &'a mut File) -> Result<RunResult> {
         let session_options = &self.options.session_options;
 
         let mut progress: Option<ProgressBar> = None;
@@ -136,13 +223,6 @@ impl<'a> Run<'a> {
             rng.fill_bytes(&mut buffer);
         }
 
-        let mut file = self.prepare_file(
-            &session_options.path,
-            session_options.file_size,
-            session_options.no_create,
-            session_options.no_disable_cache,
-        )?;
-
         let results = (0..session_options.cycles)
             .map(|cycle_index| {
                 log::trace!("Cycle {} of {}", cycle_index + 1, session_options.cycles);
@@ -154,79 +234,11 @@ impl<'a> Run<'a> {
                 let cycle = Cycle {
                     options: &cycle_options,
                 };
-                cycle.main(&mut file, &mut buffer)
+                cycle.main(file, &mut buffer)
             })
             .collect::<Result<Vec<CycleResult>>>()?;
-
-        if !session_options.no_delete {
-            if !session_options.no_create {
-                log::info!("Deleting test file {}.", session_options.path.display());
-                std::fs::remove_file(&session_options.path)?;
-            } else {
-                log::info!(
-                    "Not deleting test file {} due to --no-delete option.",
-                    session_options.path.display()
-                );
-            }
-        }
-
         let result = RunResult::new(self.options.mode.to_owned(), results);
         Ok(result)
-    }
-
-    pub fn prepare_file(
-        &self,
-        path: &PathBuf,
-        file_size: usize,
-        no_create: bool,
-        no_disable_cache: bool,
-    ) -> Result<File> {
-        log::info!(
-            "Preparing test file {}, size: {}.",
-            path.display(),
-            file_size
-        );
-
-        let mut buffer = vec![0; file_size];
-        let mut rng = rand::thread_rng();
-        rng.fill_bytes(&mut buffer);
-
-        if path.exists() {
-            if no_create {
-                log::info!(
-                    "File {} already exists, not removing due to --no-create option.",
-                    path.display()
-                );
-            } else {
-                log::info!("Deleting existing file {}.", path.display());
-                std::fs::remove_file(path)?;
-            }
-        }
-
-        let mut file = File::open_for_benchmarking(&path, no_create, no_disable_cache)?;
-        if !self.options.session_options.no_disable_cache {
-            file.set_nocache()?;
-        }
-        log::info!(
-            "Writing {} bytes to {}",
-            DataSize::from(file_size),
-            path.display()
-        );
-
-        let (elapsed, result) = measure(|| {
-            file.write(&buffer)?;
-            file.sync_all()?;
-            return Ok(());
-        });
-        log::info!(
-            "Wrote {} in {:.3}s ({}/s)",
-            DataSize::from(file_size),
-            elapsed,
-            DataSize::from(file_size as f64 / elapsed)
-        );
-        result?;
-
-        return Ok(file);
     }
 }
 
