@@ -62,17 +62,17 @@ struct Args {
     #[arg(long, default_value_t = false)]
     no_disable_cache: bool,
 
-    /// Set the log level.
-    #[clap(flatten)]
-    verbose: Verbosity<WarnLevel>,
+    /// Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds.
+    #[arg(short('j'), long, value_name = "FILE")]
+    export_json: Option<PathBuf>,
 
     /// Do not actually perform benchmarks to the disk (file is still created and/or deleted).
     #[arg(short, long, default_value_t = false)]
     dry_run: bool,
 
-    /// Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds.
-    #[arg(short('j'), long, value_name = "FILE")]
-    export_json: Option<PathBuf>,
+    /// Set the log level.
+    #[clap(flatten)]
+    verbose: Verbosity<WarnLevel>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Display, clap::ValueEnum)]

@@ -1,0 +1,81 @@
+[
+  {
+    "args": "--export-json=test.json -c 2",
+    "created": "2023-07-31T22:11:28.313954-07:00",
+    "volume": {
+      "_name": "Data",
+      "bsd_name": "disk3s5",
+      "file_system": "APFS",
+      "mount_point": "/System/Volumes/Data",
+      "physical_drive": {
+        "device_name": "APPLE SSD AP4096R",
+        "media_name": "AppleAPFSMedia",
+        "medium_type": "ssd",
+        "partition_map_type": "unknown_partition_map_type",
+        "protocol": "Apple Fabric",
+        "smart_status": "Verified"
+      }
+    },
+    "options": {
+      "modes": [
+        "Read",
+        "Write"
+      ],
+      "path": "testfile.dat",
+      "file_size": 1073741824,
+      "block_size": 134217728,
+      "cycles": 2,
+      "no_create": false,
+      "no_delete": false,
+      "dry_run": false,
+      "no_progress": false,
+      "no_disable_cache": false
+    },
+    "runs": [
+      {
+        "mode": "Read",
+        "cycle_results": [
+          {
+            "cycle": 0,
+            "bytes": 1073741824,
+            "elapsed": 0.181994792
+          },
+          {
+            "cycle": 1,
+            "bytes": 1073741824,
+            "elapsed": 0.158153667
+          }
+        ],
+        "statistics": {
+          "mean": 6344540232.076088,
+          "median": 6344540232.076088,
+          "standard_deviation": 628888119.5964868,
+          "min": 5899849178.101756,
+          "max": 6789231286.050421
+        }
+      },
+      {
+        "mode": "Write",
+        "cycle_results": [
+          {
+            "cycle": 0,
+            "bytes": 1073741824,
+            "elapsed": 0.140395416
+          },
+          {
+            "cycle": 1,
+            "bytes": 1073741824,
+            "elapsed": 0.139970708
+          }
+        ],
+        "statistics": {
+          "mean": 7659586490.863643,
+          "median": 7659586490.863643,
+          "standard_deviation": 16409117.55607762,
+          "min": 7647983492.566453,
+          "max": 7671189489.160832
+        }
+      }
+    ]
+  }
+]

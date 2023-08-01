@@ -17,7 +17,7 @@ cargo install simple-disk-benchmark
 ## Usage
 
 ```sh
-A simple tool for benchmarking disk performance
+A simple disk benchmark tool
 
 Usage: simple-disk-benchmark [OPTIONS] [FILE]
 
@@ -28,12 +28,18 @@ Options:
   -s, --size <FILESIZE>         Size of the file to use for benchmarking [default: 1GB]
   -b, --blocksize <BLOCK_SIZE>  Size of the blocks to read/write [default: 128MB]
   -c, --cycles <CYCLES>         Number of test cycles to run [default: 10]
-  -m, --mode <MODE>             Types of test to run: read, write or all [default: all]
+  -m, --mode <MODE>             Types of test to run: read, write or all [default: all] [possible values: all, read, write]
+      --no-create               Do not create the test file, the file must already exist
+      --no-delete               Do not delete the test file after the test
+      --no-progress             Do not display progress bar
+      --no-disable-cache        Do not disable the file system cache
+  -j, --export-json <FILE>      Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds
+  -d, --dry-run                 Do not actually perform benchmarks to the disk (file is still created and/or deleted)
   -v, --verbose...              More output per occurrence
   -q, --quiet...                Less output per occurrence
   -h, --help                    Print help
   -V, --version                 Print version
-```
+  ```
 
 ## Methodology
 
