@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::os::unix::prelude::OsStrExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 #[cfg(target_os = "macos")]
@@ -38,7 +38,7 @@ struct SystemProfile {
 
 #[cfg(target_os = "macos")]
 impl Volume {
-    pub fn volume_for_path(path: &PathBuf) -> anyhow::Result<Self> {
+    pub fn volume_for_path(path: &Path) -> anyhow::Result<Self> {
         if !path.exists() {
             return Err(anyhow::anyhow!("Path {} does not exist", path.display()));
         }

@@ -18,6 +18,7 @@
     "NOCACHE",
     "oflags",
     "posix",
+    "rasciigraph",
     "RDONLY",
     "RUSR",
     "rustix",

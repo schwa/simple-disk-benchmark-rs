@@ -170,22 +170,18 @@ impl<'a> StyleSheet<'a> {
         }
         let mut parts: Vec<Part> = Vec::new();
         let mut current_index: usize = 0;
-        loop {
-            if let Some(captures) = REGEX.captures_at(t, current_index) {
-                if let Some(tag) = captures.name("tag") {
-                    let text = &t[current_index..tag.start()];
-                    if !text.is_empty() {
-                        parts.push(Part::Text(text));
-                    }
-                    current_index = tag.end();
-                    if let Some(open) = captures.name("open") {
-                        parts.push(Part::OpenTag(open.as_str()));
-                    } else if let Some(close) = captures.name("close") {
-                        parts.push(Part::CloseTag(close.as_str()));
-                    }
+        while let Some(captures) = REGEX.captures_at(t, current_index) {
+            if let Some(tag) = captures.name("tag") {
+                let text = &t[current_index..tag.start()];
+                if !text.is_empty() {
+                    parts.push(Part::Text(text));
                 }
-            } else {
-                break;
+                current_index = tag.end();
+                if let Some(open) = captures.name("open") {
+                    parts.push(Part::OpenTag(open.as_str()));
+                } else if let Some(close) = captures.name("close") {
+                    parts.push(Part::CloseTag(close.as_str()));
+                }
             }
         }
         let text = &t[current_index..];

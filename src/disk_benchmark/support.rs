@@ -2,7 +2,7 @@ use anyhow::{Ok, Result};
 use std::fs::File;
 use std::os::fd::{AsRawFd, FromRawFd};
 use std::os::unix::ffi::OsStrExt;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub fn measure<F, R>(f: F) -> (f64, R)
 where
@@ -15,13 +15,13 @@ where
 }
 
 pub trait DiskBenchmark {
-    fn open_for_benchmarking(path: &PathBuf, no_disable_cache: bool) -> Result<File>;
+    fn open_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File>;
     fn set_nocache(&self) -> Result<()>;
 }
 
 #[cfg(target_os = "windows")]
 impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf, no_disable_cache: bool) -> Result<File> {
+    fn open_for_benchmarking(path: Path, no_disable_cache: bool) -> Result<File> {
         File::options()
             .create(true)
             .read(true)
@@ -37,7 +37,7 @@ impl DiskBenchmark for File {
 
 #[cfg(target_os = "linux")]
 impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf, no_disable_cache: bool) -> Result<File> {
+    fn open_for_benchmarking(path: Path, no_disable_cache: bool) -> Result<File> {
         log::info!("Opening using posix::open");
         unsafe {
             let mut oflags = libc::O_RDWR;
@@ -64,7 +64,7 @@ impl DiskBenchmark for File {
 
 #[cfg(target_os = "macos")]
 impl DiskBenchmark for File {
-    fn open_for_benchmarking(path: &PathBuf, no_disable_cache: bool) -> Result<File> {
+    fn open_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
         log::info!("Opening using posix::open");
         let file = unsafe {
             let oflags = libc::O_RDWR;

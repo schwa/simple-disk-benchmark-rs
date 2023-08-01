@@ -119,7 +119,7 @@ impl Session {
                 let run = Run {
                     options: &run_options,
                 };
-                
+
                 run.main().expect("TODO")
             })
             .collect();
@@ -177,7 +177,11 @@ impl Session {
             let mut buffer = vec![0; file_size];
             let mut rng = rand::thread_rng();
             rng.fill_bytes(&mut buffer);
-            file.write(&buffer)?;
+            let bytes_written = file.write(&buffer)?;
+            anyhow::ensure!(
+                bytes_written == file_size,
+                "Failed to write all bytes to file.",
+            );
             file.sync_all()?;
             Ok(())
         });
@@ -303,7 +307,12 @@ impl<'a> Cycle<'a> {
                 }
                 ReadWrite::Write => {
                     for _ in 0..ops {
-                        file.write(buffer)?;
+                        let bytes_written = file.write(buffer)?;
+                        anyhow::ensure!(
+                            bytes_written == buffer.len(),
+                            "Failed to write all bytes to file.",
+                        );
+
                         if let Some(progress) = self.options.progress {
                             progress.inc(session_options.block_size as u64);
                         }
@@ -333,7 +342,7 @@ pub struct RunStatistics {
 }
 
 impl RunStatistics {
-    fn new(cycle_results: &Vec<CycleResult>) -> Self {
+    fn new(cycle_results: &[CycleResult]) -> Self {
         let timings = cycle_results
             .iter()
             .map(|r| r.bytes as f64 / r.elapsed)

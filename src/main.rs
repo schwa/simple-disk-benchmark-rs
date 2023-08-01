@@ -1,16 +1,10 @@
 use anyhow::{ensure, Ok};
 use clap::Parser;
-use clap_verbosity_flag::*;
+use clap_verbosity_flag::{Verbosity, WarnLevel};
 use enum_display_derive::Display;
 use minijinja::{context, Environment};
+use std::{collections::HashSet, fmt::Display, fs::File, path::PathBuf, vec};
 
-
-use std::collections::HashSet;
-use std::fmt::Display;
-use std::fs::File;
-use std::path::PathBuf;
-use std::vec;
-//
 mod colored_markup;
 mod disk_benchmark;
 mod support;
