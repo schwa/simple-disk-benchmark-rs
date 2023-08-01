@@ -66,6 +66,10 @@ struct Args {
     #[arg(short('j'), long, value_name = "FILE")]
     export_json: Option<PathBuf>,
 
+    /// Display the results as a (ascii) chart.
+    #[arg(long)]
+    chart: bool,
+
     /// Do not actually perform benchmarks to the disk (file is still created and/or deleted).
     #[arg(short, long, default_value_t = false)]
     dry_run: bool,
@@ -171,6 +175,16 @@ File Size: <size>{{ file_size }}</size>";
 
     for run_result in session_result.runs.iter() {
         run_result.display_result();
+    }
+
+    if args.chart {
+        let data: Vec<Vec<f64>> = session_result
+            .runs
+            .iter()
+            .map(|r| r.cycle_results.iter().map(|c| c.elapsed).collect())
+            .collect();
+        let res = rasciigraph::plot_many(data, rasciigraph::Config::default().with_width(80));
+        print!("Timing:\n{}", res);
     }
 
     if let Some(path) = args.export_json {
