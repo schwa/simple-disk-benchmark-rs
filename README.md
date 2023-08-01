@@ -51,20 +51,22 @@ On macOS, the file is opened and F_NO_CACHE and F_GLOBAL_NOCACHE are both set on
 
 ## TODO
 
-* Random seeks instead of just sequential.
+* Separate file creation from opening for runs.
+* Display volume info in the preamble.
+* Better output -  display timing info as well as rates.
 * Multithreaded benchmarking option.
-* ~~Use random bytes instead of zeros for writes~~
 * Test on Windows.
 * Put on homebrew.
 * More documentation.
 * Run test coverage.
-* ~~Use a better ByteSize replacement.~~
-* Borrow CPU time stuff from hyperfine.
-* Better output.
+* Borrow CPU time stuff from [hyperfine](https://github.com/sharkdp/hyperfine).
 * Fuzz the StyleSheet code.
+* ~~Random seeks instead of just sequential.~~
+* ~~Use random bytes instead of zeros for writes~~
+* ~~Use a better ByteSize replacement.~~
 * ~~Add a `--no-delete` option to keep the file around after the benchmark.~~
 * ~~Output data to JSON~~.
-* ~~Output data to CSV~~. Wont do this. Use JSON and pipe to `jq` or `csvkit`.
+* ~~Output data to CSV~~. Won't do this. Use JSON and pipe to `jq` or `csvkit`.
 * ~~Find out what's going on with all the dead_code false positives.~~
 * ~~Sort out pub/mod stuff~~.
 

@@ -1,7 +1,7 @@
 use anyhow::{Ok, Result};
 use enum_display_derive::Display;
 use indicatif::{ProgressBar, ProgressStyle};
-use rand::RngCore;
+use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
@@ -37,6 +37,7 @@ pub struct SessionOptions {
     pub dry_run: bool,
     pub no_progress: bool,
     pub no_disable_cache: bool,
+    pub random_seek: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -281,6 +282,12 @@ impl<'a> Cycle<'a> {
             });
         }
         let (elapsed, _) = measure(|| -> Result<()> {
+            if session_options.random_seek {
+                let random_seek_location = rand::thread_rng()
+                    .gen_range(0..session_options.file_size - session_options.block_size);
+                file.seek(std::io::SeekFrom::Start(random_seek_location as u64))?;
+            }
+
             match run_options.mode {
                 ReadWrite::Read => {
                     for _ in 0..ops {

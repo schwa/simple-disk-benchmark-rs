@@ -66,9 +66,13 @@ struct Args {
     #[arg(short('j'), long, value_name = "FILE")]
     export_json: Option<PathBuf>,
 
-    /// Display the results as a (ascii) chart.
-    #[arg(long)]
-    chart: bool,
+    /// Seek to a random position in the file before each read/write.
+    #[arg(short, long)]
+    random_seek: bool,
+
+    /// Do not display a bar chart of the run timings.
+    #[arg(short = 'X', long)]
+    no_chart: bool,
 
     /// Do not actually perform benchmarks to the disk (file is still created and/or deleted).
     #[arg(short, long, default_value_t = false)]
@@ -169,6 +173,7 @@ File Size: <size>{{ file_size }}</size>";
         dry_run: args.dry_run,
         no_progress: args.no_progress,
         no_disable_cache: args.no_disable_cache,
+        random_seek: args.random_seek,
     };
     let session = Session { options };
     let session_result = session.main().expect("Session failed.");
@@ -177,13 +182,18 @@ File Size: <size>{{ file_size }}</size>";
         run_result.display_result();
     }
 
-    if args.chart {
+    if !args.no_chart {
         let data: Vec<Vec<f64>> = session_result
             .runs
             .iter()
             .map(|r| r.cycle_results.iter().map(|c| c.elapsed).collect())
             .collect();
-        let res = rasciigraph::plot_many(data, rasciigraph::Config::default().with_width(80));
+        let res = rasciigraph::plot_many(
+            data,
+            rasciigraph::Config::default()
+                .with_height(10)
+                .with_width(80),
+        );
         print!("Timing:\n{}", res);
     }
 
