@@ -62,8 +62,8 @@ impl Style {
     ) -> Style {
         Style {
             styles: styles.unwrap_or(Vec::new()),
-            foreground: foreground,
-            background: background,
+            foreground,
+            background,
         }
     }
 
@@ -79,7 +79,7 @@ impl Style {
         let mut styles = self.styles.clone();
         styles.extend(other.styles);
         Style {
-            styles: styles,
+            styles,
             foreground: other.foreground.or(self.foreground),
             background: other.background.or(self.background),
         }
@@ -106,11 +106,11 @@ impl Style {
         //     .cloned()
         //     .collect();
 
-        return Style {
-            styles: styles,
-            foreground: foreground,
-            background: background,
-        };
+        Style {
+            styles,
+            foreground,
+            background,
+        }
     }
 }
 
@@ -136,7 +136,7 @@ impl<'a> Default for StyleSheet<'a> {
 impl<'a> StyleSheet<'a> {
     fn new(styles: &[(&'a str, Style)]) -> StyleSheet<'a> {
         let styles = HashMap::from_iter(styles.iter().cloned());
-        return StyleSheet { styles: styles };
+        StyleSheet { styles }
     }
 }
 
@@ -192,7 +192,7 @@ impl<'a> StyleSheet<'a> {
         if !text.is_empty() {
             parts.push(Part::Text(text));
         }
-        return parts;
+        parts
     }
 
     pub fn render(&self, t: &str) -> Result<String> {
@@ -240,7 +240,7 @@ impl<'a> StyleSheet<'a> {
             let f = format!("{}", colored_string);
             result.push_str(&f);
         }
-        return Ok(result);
+        Ok(result)
     }
 }
 

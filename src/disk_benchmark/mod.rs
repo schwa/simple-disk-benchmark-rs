@@ -114,13 +114,13 @@ impl Session {
             .map(|mode| {
                 let run_options = RunOptions {
                     session_options: &self.options,
-                    mode: mode,
+                    mode,
                 };
                 let run = Run {
                     options: &run_options,
                 };
-                let result = run.main().expect("TODO");
-                return result;
+                
+                run.main().expect("TODO")
             })
             .collect();
         let result = SessionResult {
@@ -144,7 +144,7 @@ impl Session {
             }
         }
 
-        return Ok(result);
+        Ok(result)
     }
 
     pub fn prepare_file(&self, path: &PathBuf, file_size: usize, no_create: bool) -> Result<File> {
@@ -179,7 +179,7 @@ impl Session {
             rng.fill_bytes(&mut buffer);
             file.write(&buffer)?;
             file.sync_all()?;
-            return Ok(());
+            Ok(())
         });
         log::info!(
             "Wrote {} in {:.3}s ({}/s)",
@@ -189,7 +189,7 @@ impl Session {
         );
         result?;
 
-        return Ok(file);
+        Ok(file)
     }
 }
 
@@ -221,7 +221,7 @@ impl<'a> Run<'a> {
                 log::trace!("Cycle {} of {}", cycle_index + 1, session_options.cycles);
                 let cycle_options = CycleOptions {
                     cycle: cycle_index,
-                    run_options: &self.options,
+                    run_options: self.options,
                     progress: &progress,
                 };
                 let cycle = Cycle {
@@ -240,9 +240,9 @@ impl RunResult {
     fn new(mode: ReadWrite, cycle_results: Vec<CycleResult>) -> Self {
         let statistics = RunStatistics::new(&cycle_results);
         RunResult {
-            mode: mode,
-            cycle_results: cycle_results,
-            statistics: statistics,
+            mode,
+            cycle_results,
+            statistics,
         }
     }
 }
@@ -319,7 +319,7 @@ impl<'a> Cycle<'a> {
             elapsed,
         };
         log::debug!("Ending cycle.");
-        return Ok(result);
+        Ok(result)
     }
 }
 

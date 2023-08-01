@@ -39,7 +39,7 @@ struct SystemProfile {
 #[cfg(target_os = "macos")]
 impl Volume {
     pub fn volume_for_path(path: &PathBuf) -> anyhow::Result<Self> {
-        if path.exists() == false {
+        if !path.exists() {
             return Err(anyhow::anyhow!("Path {} does not exist", path.display()));
         }
         let mount_point: anyhow::Result<String> = unsafe {
@@ -55,7 +55,7 @@ impl Volume {
         };
         let mount_point = PathBuf::from_str(&mount_point?)?;
         let system_profile_json = std::process::Command::new("system_profiler")
-            .args(&["-json", "SPStorageDataType"])
+            .args(["-json", "SPStorageDataType"])
             .output()?
             .stdout;
         let system_profile: SystemProfile = serde_json::from_slice(&system_profile_json)?;
@@ -67,7 +67,7 @@ impl Volume {
                 "Failed to find volume for path {}",
                 path.display()
             ))?;
-        return Ok(volume);
+        Ok(volume)
     }
 }
 

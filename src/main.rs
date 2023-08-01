@@ -4,7 +4,7 @@ use clap_verbosity_flag::*;
 use enum_display_derive::Display;
 use minijinja::{context, Environment};
 
-use serde_json;
+
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::fs::File;
@@ -159,11 +159,11 @@ File Size: <size>{{ file_size }}</size>";
         block_size => args.block_size.to_human_string(),
         file_size => args.file_size.to_human_string(),
     };
-    render(&template, &context)?;
+    render(template, &context)?;
 
     // TODO: It's rather silly copying all this from Args.
     let options = SessionOptions {
-        modes: modes,
+        modes,
         path: args.path,
         file_size: args.file_size.into(),
         block_size: args.block_size.into(),
@@ -232,7 +232,7 @@ Min: <speed>{{min}}</speed>/sec, Max: <speed>{{max}}</speed>/sec";
             min => DataSize::from(self.statistics.min).to_human_string(),
             max => DataSize::from(self.statistics.max).to_human_string(),
         };
-        render(&template, &context).unwrap();
+        render(template, &context).unwrap();
     }
 }
 

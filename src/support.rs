@@ -91,10 +91,10 @@ impl<N: Num + Display> std::fmt::Display for DataSize<N> {
 
 impl<N: Num> From<N> for DataSize<N> {
     fn from(size: N) -> Self {
-        return DataSize {
-            size: size,
+        DataSize {
+            size,
             unit: Unit::B,
-        };
+        }
     }
 }
 
@@ -109,8 +109,8 @@ impl From<DataSize<usize>> for usize {
 fn test_1() {
     let make = |size: usize, unit: Unit| -> usize {
         let d = DataSize {
-            size: size,
-            unit: unit,
+            size,
+            unit,
         };
         d.into()
     };
@@ -134,15 +134,15 @@ impl<N: Num + PartialOrd + NumCast + Copy> DataSize<N> {
                     None => false,
                 }
             })
-            .expect(&format!("Couldn't find unit"));
+            .expect("Couldn't find unit");
 
         let size: f64 = self.bytes().to_f64().expect("Size to f64.") / unit.bytes() as f64;
-        return DataSize::new(size, unit);
+        DataSize::new(size, unit)
     }
 
     pub fn to_human_string(self) -> String {
         let size = self.lowest_f64_size();
-        return format!("{:.1} {}", size.size, size.unit.to_string());
+        format!("{:.1} {}", size.size, size.unit)
     }
 }
 

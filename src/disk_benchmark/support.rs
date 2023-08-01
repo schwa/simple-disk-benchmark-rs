@@ -11,7 +11,7 @@ where
     let start = std::time::Instant::now();
     let result = f();
     let elapsed = start.elapsed().as_secs_f64();
-    return (elapsed, result);
+    (elapsed, result)
 }
 
 pub trait DiskBenchmark {
