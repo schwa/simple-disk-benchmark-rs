@@ -14,6 +14,12 @@ repository = "https://github.com/schwa/simple-disk-benchmark-rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# [profile.release]
+# strip = true
+# lto = true
+# codegen-units = 1
+# panic = "abort"
+
 [dependencies]
 anyhow = "1.0.72"
 chrono = { version = "0.4.26", features = ["serde"] }
