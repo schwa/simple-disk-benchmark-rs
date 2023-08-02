@@ -74,8 +74,9 @@ cargo-analytics:
     cargo report future-incompatibilities > docs/future-incompatibilities.txt; or true
     unused-features analyze
     unused-features build-report --input report.json
-    rm report.json
+    mv report.json docs/unused-features.json
     mv report.html docs/unused-features.html
+    #unused-features prune --input docs/unused-features.json
 
 cargo-installs:
     cargo install cargo-bloat

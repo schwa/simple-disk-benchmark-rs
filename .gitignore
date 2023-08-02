@@ -1,7 +1,9 @@
 /target
-testfile.dat
-test.json
-test-*.log
 docs/bloat.txt
 docs/future-incompatibilities.txt
 docs/tree.txt
+docs/unused-features.json
+docs/unused-features.html
+test-*.log
+test.json
+testfile.dat
