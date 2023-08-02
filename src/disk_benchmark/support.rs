@@ -15,6 +15,7 @@ where
 }
 
 pub trait DiskBenchmark {
+    fn create_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File>;
     fn open_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File>;
     fn set_nocache(&self) -> Result<()>;
 }
@@ -38,7 +39,7 @@ impl DiskBenchmark for File {
 #[cfg(target_os = "linux")]
 impl DiskBenchmark for File {
     fn open_for_benchmarking(path: Path, no_disable_cache: bool) -> Result<File> {
-        log::info!("Opening using posix::open");
+        log::debug!("Opening using posix::open");
         unsafe {
             let mut oflags = libc::O_RDWR;
             if !no_disable_cache {
@@ -64,8 +65,28 @@ impl DiskBenchmark for File {
 
 #[cfg(target_os = "macos")]
 impl DiskBenchmark for File {
+    fn create_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
+        log::debug!("Creating using posix::open");
+        let file = unsafe {
+            let oflags = libc::O_CREAT | libc::O_RDWR;
+            let fd = libc::open(
+                path.as_os_str().as_bytes().as_ptr() as *const i8,
+                oflags,
+                0o644,
+            );
+            if fd == -1 {
+                return Err(std::io::Error::last_os_error().into());
+            }
+            Ok(File::from_raw_fd(fd))
+        }?;
+        if !no_disable_cache {
+            file.set_nocache()?;
+        }
+        Ok(file)
+    }
+
     fn open_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
-        log::info!("Opening using posix::open");
+        log::debug!("Opening using posix::open");
         let file = unsafe {
             let oflags = libc::O_RDWR;
             let fd = libc::open(
@@ -87,12 +108,12 @@ impl DiskBenchmark for File {
     fn set_nocache(&self) -> Result<()> {
         let fd = self.as_raw_fd();
         unsafe {
-            log::info!("Setting F_NOCACHE on fd={}", fd);
+            log::debug!("Setting F_NOCACHE on fd={}", fd);
             let r = libc::fcntl(fd, libc::F_NOCACHE, 1);
             if r == -1 {
                 return Err(std::io::Error::last_os_error().into());
             }
-            log::info!("Setting F_GLOBAL_NOCACHE on fd={}", fd);
+            log::debug!("Setting F_GLOBAL_NOCACHE on fd={}", fd);
             let r = libc::fcntl(fd, libc::F_GLOBAL_NOCACHE, 1);
             if r == -1 {
                 return Err(std::io::Error::last_os_error().into());

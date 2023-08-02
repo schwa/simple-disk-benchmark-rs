@@ -27,8 +27,8 @@ pub enum ReadWrite {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SessionOptions {
-    pub modes: Vec<ReadWrite>,
-    pub path: PathBuf,
+    pub modes: Vec<ReadWrite>, // TODO: Make ref?
+    pub path: PathBuf,         // TODO: Make ref?
     pub file_size: usize,
     pub block_size: usize,
     pub cycles: usize,
@@ -38,12 +38,14 @@ pub struct SessionOptions {
     pub no_progress: bool,
     pub no_disable_cache: bool,
     pub random_seek: bool,
+    pub no_close_file: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SessionResult {
     pub args: String,
-    pub created: chrono::DateTime<chrono::Local>,
+    #[serde(with = "time::serde::iso8601")]
+    pub created: time::OffsetDateTime,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume: Option<Volume>,
     pub options: SessionOptions,
@@ -126,7 +128,7 @@ impl Session {
         let result = SessionResult {
             args: std::env::args().collect::<Vec<String>>()[1..].join(" "),
             volume: Volume::volume_for_path(&self.options.path).ok(),
-            created: chrono::Local::now(),
+            created: time::OffsetDateTime::now_local()?,
             options: self.options.clone(),
 
             runs: runs_results,
@@ -134,10 +136,15 @@ impl Session {
 
         if !self.options.no_delete {
             if !self.options.no_create {
-                log::info!("Deleting test file {}.", self.options.path.display());
+                log::debug!(
+                    target: "Session",
+                    "Deleting test file {}.",
+                    self.options.path.display()
+                );
                 std::fs::remove_file(&self.options.path)?;
             } else {
-                log::info!(
+                log::debug!(
+                    target: "Session",
                     "Not deleting test file {} due to --no-delete option.",
                     self.options.path.display()
                 );
@@ -148,7 +155,8 @@ impl Session {
     }
 
     pub fn prepare_file(&self, path: &PathBuf, file_size: usize, no_create: bool) -> Result<File> {
-        log::info!(
+        log::debug!(
+            target: "Session",
             "Preparing test file {}, size: {}.",
             path.display(),
             file_size
@@ -156,18 +164,28 @@ impl Session {
 
         if path.exists() {
             if no_create {
-                log::info!(
+                log::debug!(
+                    target: "Session",
                     "File {} already exists, not removing due to --no-create option.",
                     path.display()
                 );
             } else {
-                log::info!("Deleting existing file {}.", path.display());
+                log::debug!(
+                    target: "Session",
+                    "Deleting existing file {}.",
+                    path.display()
+                );
                 std::fs::remove_file(path)?;
             }
         }
-
-        let mut file = File::create(path)?;
-        log::info!(
+        log::trace!(
+            target: "Session",
+            "Creating file {}.",
+            path.display()
+        );
+        let mut file = File::create_for_benchmarking(path, self.options.no_disable_cache)?;
+        log::debug!(
+            target: "Session",
             "Writing {} bytes to {}",
             DataSize::from(file_size),
             path.display()
@@ -185,7 +203,9 @@ impl Session {
             file.sync_all()?;
             Ok(())
         });
-        log::info!(
+
+        log::debug!(
+            target: "Session",
             "Wrote {} in {:.3}s ({}/s)",
             DataSize::from(file_size),
             elapsed,
@@ -199,7 +219,7 @@ impl Session {
 
 impl<'a> Run<'a> {
     pub fn main(&self) -> Result<RunResult> {
-        log::debug!("Starting run.");
+        log::debug!(target: "Session::Run", "Starting run.");
         let session_options = &self.options.session_options;
 
         let mut progress: Option<ProgressBar> = None;
@@ -220,22 +240,33 @@ impl<'a> Run<'a> {
             rng.fill_bytes(&mut buffer);
         }
 
-        let results = (0..session_options.cycles)
-            .map(|cycle_index| {
-                log::trace!("Cycle {} of {}", cycle_index + 1, session_options.cycles);
-                let cycle_options = CycleOptions {
-                    cycle: cycle_index,
-                    run_options: self.options,
-                    progress: &progress,
-                };
-                let cycle = Cycle {
-                    options: &cycle_options,
-                };
-                cycle.main(&mut buffer)
-            })
-            .collect::<Result<Vec<CycleResult>>>()?;
+        let mut file = None;
+        if session_options.no_close_file {
+            log::debug!(target: "Session::Run","Opening file _once_ for this run due to --no-close-file option.");
+            file = Some(File::open_for_benchmarking(
+                &session_options.path,
+                session_options.no_disable_cache,
+            )?)
+        }
+
+        let mut results = Vec::with_capacity(session_options.cycles);
+
+        for cycle_index in 0..session_options.cycles {
+            let cycle_options = CycleOptions {
+                cycle: cycle_index,
+                run_options: self.options,
+                progress: &progress,
+            };
+            let cycle = Cycle {
+                options: &cycle_options,
+            };
+
+            let cycle_result = cycle.main(&file, &mut buffer);
+            results.push(cycle_result?);
+        }
+
         let result = RunResult::new(self.options.mode.to_owned(), results);
-        log::debug!("Ending run.");
+        log::debug!(target: "Session::Run","Ending run.");
         Ok(result)
     }
 }
@@ -252,30 +283,35 @@ impl RunResult {
 }
 
 impl<'a> Cycle<'a> {
-    fn main(&self, buffer: &'a mut Vec<u8>) -> Result<CycleResult> {
-        log::debug!("Starting cycle.");
+    fn main(&self, file: &'a Option<File>, buffer: &'a mut Vec<u8>) -> Result<CycleResult> {
         let run_options = &self.options.run_options;
         let session_options = &run_options.session_options;
+        log::debug!(target: "Session::Run::Cycle", "Starting cycle {}/{}.", self.options.cycle + 1, session_options.cycles);
 
         assert!(session_options.file_size > session_options.block_size);
 
-        log::debug!("Opening file.");
-        let mut file =
-            File::open_for_benchmarking(&session_options.path, session_options.no_disable_cache)?;
+        let my_file: Option<File> = match file {
+            Some(_) => None,
+            None => Some(File::open_for_benchmarking(
+                &session_options.path,
+                session_options.no_disable_cache,
+            )?),
+        };
 
-        log::trace!(
-            "read: cycles={} / block_size={}",
-            session_options.cycles,
-            DataSize::from(session_options.block_size)
-        );
+        let mut file: &File = match file {
+            Some(file) => file,
+            None => my_file.as_ref().unwrap(),
+        };
+
         if let Some(progress) = self.options.progress {
             progress.inc(0);
         }
 
         let ops = session_options.file_size / session_options.block_size;
+        log::debug!(target: "Session::Run::Cycle", "Performing {} {} operations of {} bytes each.", ops, run_options.mode, DataSize::new(session_options.block_size, Unit::B));
 
         if session_options.dry_run {
-            log::info!("Dry run, skipping read/write.");
+            log::debug!(target: "Session::Run::Cycle", "Dry run, skipping read/write.");
             return Ok(CycleResult {
                 cycle: self.options.cycle,
                 bytes: session_options.file_size,
@@ -327,7 +363,7 @@ impl<'a> Cycle<'a> {
             bytes: session_options.file_size,
             elapsed,
         };
-        log::debug!("Ending cycle.");
+        log::debug!(target: "Session::Run::Cycle", "Ending cycle.");
         Ok(result)
     }
 }

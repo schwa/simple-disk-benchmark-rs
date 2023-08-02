@@ -43,3 +43,15 @@ next-version:
     set PATCH $PARTS[3]
     set NEXT_PATCH (math $PATCH + 1)
     echo "$MAJOR.$MINOR.$NEXT_PATCH"
+
+test-opens:
+    cargo build --release
+    rm test-1.log
+    rm test-2.log
+    ./target/release/simple-disk-benchmark --size 1GB --blocksize 128MB --cycles 10 --mode read --no-progress --no-chart --export-log test-1.log
+    ./target/release/simple-disk-benchmark --size 1GB --blocksize 128MB --cycles 10 --mode read --no-progress --no-chart --export-log test-2.log --no-close-file
+    grep "posix::open" test-1.log | wc -l
+    grep "posix::open" test-2.log | wc -l
+
+bonnieplusplus:
+    bonnie++ | bon_csv2html > bonnie++.html
