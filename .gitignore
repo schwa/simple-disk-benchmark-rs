@@ -2,3 +2,6 @@
 testfile.dat
 test.json
 test-*.log
+docs/bloat.txt
+docs/future-incompatibilities.txt
+docs/tree.txt
