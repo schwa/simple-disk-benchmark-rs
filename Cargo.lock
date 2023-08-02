@@ -775,7 +775,6 @@ dependencies = [
  "clap",
  "clap-verbosity-flag",
  "colored 2.0.4",
- "console",
  "enum-display-derive",
  "fern",
  "humantime",

@@ -23,7 +23,7 @@ publish:
     just _check-repo; or exit 1
     cargo test; or exit 1
     just update-usage
-    gum format -t template 'Update {{ Color "99" "Cargo.toml" }} version to $NEXT_VERSION'
+    echo "Updating Cargo.toml to version $NEXT_VERSION"
     toml set Cargo.toml package.version $NEXT_VERSION| sponge Cargo.toml
     gum confirm "Update gif?"; and just update-gif; git add docs/out.gif
     gum confirm "git commit -a"; and git commit -a
@@ -71,7 +71,7 @@ bonnieplusplus:
 cargo-analytics:
     cargo tree > docs/tree.txt
     cargo bloat --release --crates -n 10000 > docs/bloat.txt
-    cargo report future-incompatibilities > docs/future-incompatibilities.txt
+    cargo report future-incompatibilities > docs/future-incompatibilities.txt; or true
     unused-features analyze
     unused-features build-report --input report.json
     rm report.json
