@@ -27,8 +27,7 @@ publish:
     gum confirm "git commit -a"; and git commit -a
     gum confirm "git tag?"; and git tag $NEXT_VERSION
     gum confirm "git push?"; and git push --tags origin main
-    gum confirm "Push"; and git push --tags origin main
-    gum confirm "Rust publish"; and rust publish
+    gum confirm "Rust publish"; and cargo publish
 
 _check-repo:
     #!/usr/bin/env fish
