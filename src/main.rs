@@ -8,6 +8,8 @@ use std::{collections::HashSet, fmt::Display, fs::File, path::PathBuf, vec};
 mod colored_markup;
 mod disk_benchmark;
 mod support;
+mod timer;
+mod util;
 mod volume;
 
 use colored_markup::*;
