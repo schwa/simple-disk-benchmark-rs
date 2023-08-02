@@ -216,17 +216,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive-enum-from-into"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adc2a1b7c0031fb651e9bc1fa4255da82747c187b9ac1dc36b3783d71fadd9d5"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -340,16 +329,6 @@ dependencies = [
  "hermit-abi",
  "rustix",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "iso8601"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "924e5d73ea28f59011fec52a0d12185d496a9b075d360657aed2a5707f701153"
-dependencies = [
- "nom",
- "serde",
 ]
 
 [[package]]
@@ -797,12 +776,10 @@ dependencies = [
  "clap-verbosity-flag",
  "colored 2.0.4",
  "console",
- "derive-enum-from-into",
  "enum-display-derive",
  "fern",
  "humantime",
  "indicatif",
- "iso8601",
  "lazy_static",
  "libc",
  "log",

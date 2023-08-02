@@ -24,7 +24,7 @@ publish:
     cargo test; or exit 1
     just update-usage
     gum format -t template 'Update {{ Color "99" "Cargo.toml" }} version to $NEXT_VERSION'
-    toml set Cargo.toml package.version $NEXT_VERSION | sponge Cargo.toml
+    toml set Cargo.toml package.version $NEXT_VERSION| sponge Cargo.toml
     gum confirm "Update gif?"; and just update-gif; git add docs/out.gif
     gum confirm "git commit -a"; and git commit -a
     gum confirm "git tag?"; and git tag $NEXT_VERSION
@@ -72,3 +72,14 @@ cargo-analytics:
     cargo tree > docs/tree.txt
     cargo bloat --release --crates -n 10000 > docs/bloat.txt
     cargo report future-incompatibilities > docs/future-incompatibilities.txt
+    unused-features analyze
+    unused-features build-report --input report.json
+    rm report.json
+    mv report.html docs/unused-features.html
+
+cargo-installs:
+    cargo install cargo-bloat
+    brew install cargo-udeps
+    cargo install cargo-unused-features
+    cargo install toml-cli
+    #rustup toolchain install nightly-aarch64-apple-darwin
