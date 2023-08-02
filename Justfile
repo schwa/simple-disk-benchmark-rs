@@ -62,3 +62,8 @@ test-opens:
 
 bonnieplusplus:
     bonnie++ | bon_csv2html > bonnie++.html
+
+cargo-analytics:
+    cargo tree > docs/tree.txt
+    cargo bloat --release --crates -n 10000 > docs/bloat.txt
+    cargo report future-incompatibilities > docs/future-incompatibilities.txt
