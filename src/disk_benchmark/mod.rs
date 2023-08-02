@@ -308,7 +308,7 @@ impl<'a> Cycle<'a> {
         }
 
         let ops = session_options.file_size / session_options.block_size;
-        log::debug!(target: "Session::Run::Cycle", "Performing {} {} operations of {} bytes each.", ops, run_options.mode, DataSize::new(session_options.block_size, Unit::B));
+        log::debug!(target: "Session::Run::Cycle", "Performing {} {} operations of {} bytes each.", ops, run_options.mode, DataSize::new(session_options.block_size, Unit::B).to_human_string());
 
         if session_options.dry_run {
             log::debug!(target: "Session::Run::Cycle", "Dry run, skipping read/write.");
