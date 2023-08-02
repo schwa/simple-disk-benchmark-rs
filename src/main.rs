@@ -40,6 +40,10 @@ struct Args {
     #[arg(short, long, default_value = "all")]
     mode: Vec<Mode>,
 
+    /// Seek to a random position in the file before each read/write.
+    #[arg(short, long)]
+    random_seek: bool,
+
     /// Do not create the test file, the file must already exist.
     #[arg(long, default_value_t = false)]
     no_create: bool,
@@ -56,17 +60,21 @@ struct Args {
     #[arg(long, default_value_t = false)]
     no_disable_cache: bool,
 
-    /// Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds.
-    #[arg(short('j'), long, value_name = "FILE")]
-    export_json: Option<PathBuf>,
-
-    /// Seek to a random position in the file before each read/write.
-    #[arg(short, long)]
-    random_seek: bool,
+    /// Do not close the file after each cycle.
+    #[arg(long, default_value_t = false)]
+    no_close_file: bool,
 
     /// Do not display a bar chart of the run timings.
     #[arg(short = 'X', long)]
     no_chart: bool,
+
+    /// Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds.
+    #[arg(short('j'), long, value_name = "FILE")]
+    export_json: Option<PathBuf>,
+
+    /// Export the log to the given FILE.
+    #[arg(long, value_name = "FILE")]
+    export_log: Option<PathBuf>,
 
     /// Do not actually perform benchmarks to the disk (file is still created and/or deleted).
     #[arg(short, long, default_value_t = false)]
@@ -87,12 +95,8 @@ enum Mode {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    simple_logger::SimpleLogger::new()
-        // .with_module_level("ignore::walk", LevelFilter::Warn)
-        .with_level(args.verbose.log_level_filter())
-        .env()
-        .init()
-        .expect("Failed to initialize logger.");
+    setup_logger(args.verbose.log_level_filter(), &args.export_log)?;
+
     log::debug!("{:?}", args);
 
     let file_size: usize = args.file_size.into();
@@ -168,6 +172,7 @@ File Size: <size>{{ file_size }}</size>";
         no_progress: args.no_progress,
         no_disable_cache: args.no_disable_cache,
         random_seek: args.random_seek,
+        no_close_file: args.no_close_file,
     };
     let session = Session { options };
     let session_result = session.main().expect("Session failed.");
@@ -247,6 +252,49 @@ fn render(template: &str, context: &minijinja::value::Value) -> anyhow::Result<(
     let tmpl = env.get_template("template").unwrap();
     let render = tmpl.render(context).unwrap();
     println!("{}", style_sheet.render(&render)?);
+
+    Ok(())
+}
+
+use fern::colors::{Color, ColoredLevelConfig};
+use std::time::SystemTime;
+
+fn setup_logger(level_filter: log::LevelFilter, log_path: &Option<PathBuf>) -> anyhow::Result<()> {
+    let colors = ColoredLevelConfig::new()
+        .info(Color::Green)
+        .debug(Color::Magenta);
+
+    let mut base_logger = fern::Dispatch::new();
+
+    let console_logger = fern::Dispatch::new()
+        .level(level_filter)
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "{:8.8} {:24.24} | {}",
+                colors.color(record.level()),
+                record.target(),
+                message
+            ))
+        })
+        .chain(std::io::stdout());
+    base_logger = base_logger.chain(console_logger);
+
+    if let Some(log_path) = log_path {
+        let file_logger = fern::Dispatch::new()
+            .format(move |out, message, record| {
+                out.finish(format_args!(
+                    "[{} {} {}] {}",
+                    humantime::format_rfc3339_seconds(SystemTime::now()),
+                    record.level(),
+                    record.target(),
+                    message
+                ))
+            })
+            .chain(fern::log_file(log_path)?);
+        base_logger = base_logger.chain(file_logger);
+    }
+
+    base_logger.apply()?;
 
     Ok(())
 }
