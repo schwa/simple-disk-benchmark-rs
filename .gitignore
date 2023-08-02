@@ -1,3 +1,4 @@
 /target
 testfile.dat
 test.json
+test-*.log

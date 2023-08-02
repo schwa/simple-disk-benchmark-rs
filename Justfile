@@ -6,7 +6,8 @@ _list:
     just --list
 
 update-gif:
-    vhs docs/demo.tape -o docs/out.gif
+    cargo install --path .
+    vhs scripts/demo.tape -o docs/out.gif
 
 publish:
     #!/usr/bin/env fish
@@ -53,8 +54,8 @@ _next-version:
 
 test-opens:
     cargo build --release
-    rm test-1.log
-    rm test-2.log
+    rm -f test-1.log
+    rm -f test-2.log
     ./target/release/simple-disk-benchmark --size 1GB --blocksize 128MB --cycles 10 --mode read --no-progress --no-chart --export-log test-1.log
     ./target/release/simple-disk-benchmark --size 1GB --blocksize 128MB --cycles 10 --mode read --no-progress --no-chart --export-log test-2.log --no-close-file
     grep "posix::open" test-1.log | wc -l
