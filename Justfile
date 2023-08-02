@@ -23,6 +23,8 @@ publish:
     just _check-repo; or exit 1
     cargo test; or exit 1
     just update-usage
+    gum format -t template 'Update {{ Color "99" "Cargo.toml" }} version to $NEXT_VERSION'
+    toml set Cargo.toml package.version $NEXT_VERSION | sponge Cargo.toml
     gum confirm "Update gif?"; and just update-gif; git add docs/out.gif
     gum confirm "git commit -a"; and git commit -a
     gum confirm "git tag?"; and git tag $NEXT_VERSION
@@ -50,6 +52,9 @@ _next-version:
     set PATCH $PARTS[3]
     set NEXT_PATCH (math $PATCH + 1)
     echo "$MAJOR.$MINOR.$NEXT_PATCH"
+
+bump-version:
+    toml set Cargo.toml package.version XXXXX | sponge Cargo.toml
 
 test-opens:
     cargo build --release
