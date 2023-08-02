@@ -29,13 +29,15 @@ Options:
   -b, --blocksize <BLOCK_SIZE>  Size of the blocks to read/write [default: 128MB]
   -c, --cycles <CYCLES>         Number of test cycles to run [default: 10]
   -m, --mode <MODE>             Types of test to run: read, write or all [default: all] [possible values: all, read, write]
+  -r, --random-seek             Seek to a random position in the file before each read/write
       --no-create               Do not create the test file, the file must already exist
       --no-delete               Do not delete the test file after the test
       --no-progress             Do not display progress bar
       --no-disable-cache        Do not disable the file system cache
-  -j, --export-json <FILE>      Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds
-  -r, --random-seek             Seek to a random position in the file before each read/write
+      --no-close-file           Do not close the file after each cycle
   -X, --no-chart                Do not display a bar chart of the run timings
+  -j, --export-json <FILE>      Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds
+      --export-log <FILE>       Export the log to the given FILE
   -d, --dry-run                 Do not actually perform benchmarks to the disk (file is still created and/or deleted)
   -v, --verbose...              More output per occurrence
   -q, --quiet...                Less output per occurrence

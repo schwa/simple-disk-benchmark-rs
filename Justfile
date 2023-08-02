@@ -1,3 +1,10 @@
+set shell := ["fish", "-c"]
+
+_default: _list
+
+_list:
+    just --list
+
 update-gif:
     vhs docs/demo.tape -o docs/out.gif
 
@@ -8,11 +15,11 @@ publish:
         echo "Not on master branch. Please switch to master before publishing."
         exit 1
     end
-    set NEXT_VERSION (just next-version)
+    set NEXT_VERSION (just _next-version)
     gum confirm "Confirm next version: '$NEXT_VERSION'?"; or exit 1
-    just check-repo; or exit 1
+    just _check-repo; or exit 1
     cargo clippy --fix
-    just check-repo; or exit 1
+    just _check-repo; or exit 1
     cargo test; or exit 1
     just update-usage
     gum confirm "Update gif?"; and just update-gif; git add docs/out.gif
@@ -22,7 +29,7 @@ publish:
     gum confirm "Push"; and git push --tags origin main
     gum confirm "Rust publish"; and rust publish
 
-check-repo:
+_check-repo:
     #!/usr/bin/env fish
     set is_dirty (git status --porcelain)
     if test -n "$is_dirty"
@@ -34,7 +41,7 @@ update-usage:
     #!/usr/bin/env fish
     awk -f scripts/replace.awk -v INDEX=2 -v "REPLACEMENT=cargo run -- --help 2> /dev/null" README.md | sponge README.md
 
-next-version:
+_next-version:
     #!/usr/bin/env fish
     set LATEST_TAG (git describe --tags --abbrev=0)
     set PARTS (string split . $LATEST_TAG)
