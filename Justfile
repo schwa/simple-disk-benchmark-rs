@@ -3,27 +3,24 @@ update-gif:
 
 publish:
     #!/usr/bin/env fish
-
     set CURRENT_BRANCH (git symbolic-ref --short HEAD)
     if [ $CURRENT_BRANCH != main ]
         echo "Not on master branch. Please switch to master before publishing."
         exit 1
     end
-
     set NEXT_VERSION (just next-version)
     gum confirm "Confirm next version: '$NEXT_VERSION'?"; or exit 1
-    echo just check-repo; or exit 1
-    echo cargo clippy --fix
-    echo just check-repo; or exit 1
-    echo cargo test
-    echo just update-usage
-    gum confirm "Update gif"; and just update-gif; git commit -a -m "Update demo gif"
-    gum confirm "Commit all changes?"; and git commit -a -m "Prepare for $NEXT_VERSION"
-    gum confirm "Push"; and git push
-    echo git push
-    echo git tag -a $VERSION
-    echo git push --tags
-    echo rust publish
+    just check-repo; or exit 1
+    cargo clippy --fix
+    just check-repo; or exit 1
+    cargo test; or exit 1
+    just update-usage
+    gum confirm "Update gif?"; and just update-gif; git add docs/out.gif
+    gum confirm "git commit -a"; and git commit -a
+    gum confirm "git tag?"; and git tag -a $VERSION
+    gum confirm "git push?"; and git push --tags origin main
+    gum confirm "Push"; and git push --tags origin main
+    gum confirm "Rust publish"; and rust publish
 
 check-repo:
     #!/usr/bin/env fish
