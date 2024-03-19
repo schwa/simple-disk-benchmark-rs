@@ -12,27 +12,27 @@ license = "MIT"
 repository = "https://github.com/schwa/simple-disk-benchmark-rs"
 
 [dependencies]
-libc = { version = "0.2.147", default-features = false }
-anyhow = "1.0.72"
-clap-verbosity-flag = "2.0.1"
-colored = "2.0.4"
+libc = { version = "0.2.153", default-features = false }
+anyhow = "1.0.81"
+clap-verbosity-flag = "2.2.0"
+colored = "2.1.0"
 enum-display-derive = "0.1.1"
 humantime = "2.1.0"
-indicatif = { default-features = false, version = "0.17.5" }
+indicatif = { default-features = false, version = "0.17.8" }
 lazy_static = "1.4.0"
-minijinja = { version = "1.0.5", default-features = false }
+minijinja = { version = "1.0.13", default-features = false }
 nom = "7.1.3"
-num-traits = { default-features = false, version = "0.2.16" }
-os_info = "3.7.0"
+num-traits = { default-features = false, version = "0.2.18" }
+os_info = "3.8.1"
 rand = "0.8.5"
 rasciigraph = "0.2.0"
-regex = { version = "1.9.1" }
-serde_json = "1.0.104"
+regex = { version = "1.10.3" }
+serde_json = "1.0.114"
 statistical = "1.0.0"
-rust_decimal = "1.31.0"
+rust_decimal = "1.34.3"
 
 [dependencies.clap]
-version = "4.3.19"
+version = "4.5.3"
 features = ["derive"]
 optional = false
 
@@ -42,22 +42,22 @@ features = ["colored"]
 optional = false
 
 [dependencies.log]
-version = "0.4.19"
+version = "0.4.21"
 features = []
 optional = false
 
 [dependencies.serde]
-version = "1.0.180"
+version = "1.0.197"
 features = ["derive"]
 optional = false
 
 [dependencies.strum]
-version = "0.25.0"
+version = "0.26.2"
 features = ["derive"]
 optional = false
 
 [dependencies.time]
-version = "0.3.24"
+version = "0.3.34"
 features = ["serde-human-readable", "local-offset"]
 optional = false
 
