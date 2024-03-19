@@ -61,7 +61,7 @@ impl Style {
         background: Option<colored::Color>,
     ) -> Style {
         Style {
-            styles: styles.unwrap_or(Vec::new()),
+            styles: styles.unwrap_or_default(),
             foreground,
             background,
         }
@@ -240,6 +240,14 @@ impl<'a> StyleSheet<'a> {
     }
 }
 
+#[macro_export]
+macro_rules! cmarkup {
+    ($template:tt, $($arg:tt)*) => {{
+        let s = format!($($arg)*);
+        $template.render(&s).unwrap()
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,12 +287,4 @@ mod tests {
     //         "\u{1b}[3mEM \u{1b}[0m\u{1b}[1;3mBOLD\u{1b}[0m\u{1b}[3mEM\u{1b}[0m"
     //     );
     // }
-}
-
-#[macro_export]
-macro_rules! cmarkup {
-    ($template:tt, $($arg:tt)*) => {{
-        let s = format!($($arg)*);
-        $template.render(&s).unwrap()
-    }};
 }
