@@ -39,8 +39,8 @@ Options:
   -j, --export-json <FILE>      Export the timing summary statistics and timings of individual runs as JSON to the given FILE. The output time unit is always seconds
       --export-log <FILE>       Export the log to the given FILE
   -d, --dry-run                 Do not actually perform benchmarks to the disk (file is still created and/or deleted)
-  -v, --verbose...              More output per occurrence
-  -q, --quiet...                Less output per occurrence
+  -v, --verbose...              Increase logging verbosity
+  -q, --quiet...                Decrease logging verbosity
   -h, --help                    Print help
   -V, --version                 Print version
 ```
