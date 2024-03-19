@@ -13,7 +13,7 @@ publish:
     #!/usr/bin/env fish
     set CURRENT_BRANCH (git symbolic-ref --short HEAD)
     if [ $CURRENT_BRANCH != main ]
-        echo "Not on master branch. Please switch to master before publishing."
+        echo "Not on main branch. Please switch to main before publishing."
         exit 1
     end
     set NEXT_VERSION (just _next-version)
@@ -84,3 +84,4 @@ cargo-installs:
     cargo install cargo-unused-features
     cargo install toml-cli
     #rustup toolchain install nightly-aarch64-apple-darwin
+    cargo install cargo-edit
