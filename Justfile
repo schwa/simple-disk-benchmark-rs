@@ -85,3 +85,23 @@ cargo-installs:
     cargo install toml-cli
     #rustup toolchain install nightly-aarch64-apple-darwin
     cargo install cargo-edit
+
+linux-setup machine_name:
+    #!/usr/bin/env fish
+    # set MACHINE_NAME {{machine_name}}
+    # if orb list --format json | jq -e ".[].name == \"$MACHINE_NAME\""
+    #     echo "Machine already exists"
+    #     exit 1
+    # else
+    #     echo "Machine does not exist. Creating..."
+    # end
+
+    orb create -a arm64 ubuntu {{machine_name}}
+    orb run --machine {{machine_name}} sudo apt install gcc
+    orb run --machine {{machine_name}} --shell curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+linux-run_ machine_name: (linux-setup machine_name)
+    orb run --machine {{machine_name}} cargo clean
+    orb run --machine {{machine_name}} cargo build
+
+linux-run: (linux-run_ "ubuntu")
