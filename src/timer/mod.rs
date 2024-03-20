@@ -6,8 +6,8 @@ mod windows_timer;
 #[cfg(not(windows))]
 mod unix_timer;
 
-#[cfg(target_os = "linux")]
-use nix::fcntl::{splice, SpliceFFlags};
+// #[cfg(target_os = "linux")]
+// use nix::fcntl::{splice, SpliceFFlags};
 #[cfg(target_os = "linux")]
 use std::fs::File;
 #[cfg(target_os = "linux")]
@@ -49,23 +49,23 @@ pub struct TimerResult {
 fn discard(output: ChildStdout) {
     const CHUNK_SIZE: usize = 64 << 10;
 
-    #[cfg(target_os = "linux")]
-    {
-        if let Ok(file) = File::create("/dev/null") {
-            while let Ok(bytes) = splice(
-                output.as_raw_fd(),
-                None,
-                file.as_raw_fd(),
-                None,
-                CHUNK_SIZE,
-                SpliceFFlags::empty(),
-            ) {
-                if bytes == 0 {
-                    break;
-                }
-            }
-        }
-    }
+    // #[cfg(target_os = "linux")]
+    // {
+    //     if let Ok(file) = File::create("/dev/null") {
+    //         while let Ok(bytes) = splice(
+    //             output.as_raw_fd(),
+    //             None,
+    //             file.as_raw_fd(),
+    //             None,
+    //             CHUNK_SIZE,
+    //             SpliceFFlags::empty(),
+    //         ) {
+    //             if bytes == 0 {
+    //                 break;
+    //             }
+    //         }
+    //     }
+    // }
 
     let mut output = output;
     let mut buf = [0; CHUNK_SIZE];
