@@ -48,7 +48,7 @@ impl DiskBenchmark for File {
         let file = unsafe {
             let oflags = libc::O_CREAT | libc::O_RDWR;
             let fd = libc::open(
-                path.as_os_str().as_bytes().as_ptr() as *const u8,
+                path.as_os_str().as_bytes().as_ptr() as *const i8,
                 oflags,
                 0o644,
             );
@@ -72,7 +72,7 @@ impl DiskBenchmark for File {
             }
 
             let fd = libc::open(
-                path.as_os_str().as_bytes().as_ptr() as *const u8,
+                path.as_os_str().as_bytes().as_ptr() as *const i8,
                 oflags,
                 0o644,
             );
