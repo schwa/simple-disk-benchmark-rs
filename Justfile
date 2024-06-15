@@ -31,7 +31,7 @@ publish:
     gum confirm "git push?"; and git push --tags origin main
     gum confirm "Rust publish"; and cargo publish
 
-    gum confirm "Update homebrew?"; and just homebrew-release $NEXT_VERSION:
+    gum confirm "Update homebrew?"; and just homebrew-release $NEXT_VERSION
 
 _check-repo:
     #!/usr/bin/env fish
@@ -127,3 +127,8 @@ homebrew-release VERSION:
     git commit --all --message "simple-disk-benchmark $VERSION"
     git push
     popd
+
+test-homebrew:
+    brew tap schwa/schwa
+    brew update
+    brew install simple-disk-benchmark
