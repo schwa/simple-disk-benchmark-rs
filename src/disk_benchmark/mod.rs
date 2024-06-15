@@ -7,7 +7,7 @@ use std::{
     fmt::Display,
     fs::File,
     io::{Read, Seek, Write},
-    path::PathBuf,
+    path::{PathBuf},
     vec,
 };
 
@@ -442,15 +442,16 @@ impl RunStatistics {
 mod tests {
     use super::*;
     use tempfile::tempdir;
+    use std::path::Path;
 
     impl SessionOptions {
-        pub fn new(path: &PathBuf, file_size: usize, block_size: usize, cycles: usize) -> Self {
+        pub fn new(path: &Path, file_size: usize, block_size: usize, cycles: usize) -> Self {
             SessionOptions {
                 modes: vec![ReadWrite::Read, ReadWrite::Write],
-                path: path.clone(),
-                file_size: file_size,
-                block_size: block_size,
-                cycles: cycles,
+                path: path.to_path_buf(),
+                file_size,
+                block_size,
+                cycles,
                 no_create: false,
                 no_delete: true,
                 dry_run: false,

@@ -320,13 +320,15 @@ fn setup_logger(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     use assert_cmd::Command;
 
     #[test]
     fn test_cli() {
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
-        let output = cmd.args(&["--size", "1MB", "--blocksize", "64KB", "--no-chart"]).unwrap();
+        let output = cmd
+            .args(["--size", "1MB", "--blocksize", "64KB", "--no-chart"])
+            .unwrap();
         println!("{:?}", output);
     }
 }
