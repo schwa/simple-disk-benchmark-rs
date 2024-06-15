@@ -62,3 +62,4 @@ optional = false
 
 [dev-dependencies]
 tempfile = "3.10.1"
+assert_cmd = "2.0.14"

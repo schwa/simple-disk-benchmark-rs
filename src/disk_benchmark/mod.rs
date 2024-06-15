@@ -42,7 +42,6 @@ pub struct SessionOptions {
     pub no_random_buffer: bool,
 }
 
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SessionResult {
     pub args: String,
@@ -459,7 +458,7 @@ mod tests {
                 no_disable_cache: false,
                 random_seek: false,
                 no_close_file: false,
-                no_random_buffer: false
+                no_random_buffer: false,
             }
         }
     }
@@ -474,6 +473,5 @@ mod tests {
         let session = Session { options };
         let result = session.main().unwrap();
         println!("{}", serde_json::to_string_pretty(&result).unwrap());
-
     }
 }
