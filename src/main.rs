@@ -1,11 +1,11 @@
 use anyhow::{ensure, Ok, Result};
-use clap_verbosity_flag::{Verbosity, WarnLevel};
 use clap::Parser;
+use clap_verbosity_flag::{Verbosity, WarnLevel};
 use enum_display_derive::Display;
 use fern::colors::{Color, ColoredLevelConfig};
 use minijinja::{context, Environment};
-use std::{collections::HashSet, fmt::Display, fs::File, path::PathBuf, vec};
 use std::time::SystemTime;
+use std::{collections::HashSet, fmt::Display, fs::File, path::PathBuf, vec};
 
 mod colored_markup;
 mod disk_benchmark;
@@ -322,7 +322,14 @@ mod tests {
     fn test_cli() {
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
         let output = cmd
-            .args(["--size", "1MB", "--blocksize", "64KB", "--no-chart", "--no-progress"])
+            .args([
+                "--size",
+                "1MB",
+                "--blocksize",
+                "64KB",
+                "--no-chart",
+                "--no-progress",
+            ])
             .unwrap();
         println!("{:?}", output);
     }

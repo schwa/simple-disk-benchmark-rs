@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+
+#[cfg(target_os = "macos")]
+use std::path::Path;
+
+#[cfg(target_os = "macos")]
 use std::str::FromStr;
 
 #[cfg(target_os = "macos")]
@@ -89,9 +94,6 @@ impl StatFSStuff for libc::statfs {
 }
 
 // MARK: Linux
-
-#[cfg(target_os = "linux")]
-use std::os::unix::prelude::OsStrExt;
 
 #[cfg(target_os = "linux")]
 #[derive(Serialize, Deserialize, Debug)]

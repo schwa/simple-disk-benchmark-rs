@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use core::fmt::{Debug, Display};
 use num_traits::{Num, NumCast};
 use serde::{Deserialize, Serialize};
-use strum::{EnumIter, Display, IntoEnumIterator};
+use strum::{Display, EnumIter, IntoEnumIterator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, EnumIter, Display)]
 pub enum Unit {

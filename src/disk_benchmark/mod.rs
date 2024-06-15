@@ -441,8 +441,8 @@ impl RunStatistics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::path::Path;
+    use tempfile::tempdir;
 
     impl SessionOptions {
         pub fn new(path: &Path, file_size: usize, block_size: usize, cycles: usize) -> Self {

@@ -89,7 +89,7 @@ impl DiskBenchmark for File {
 // MARK: Linux
 
 #[cfg(target_os = "linux")]
-use std::os::fd::{AsRawFd, FromRawFd};
+use std::os::fd::FromRawFd;
 
 #[cfg(target_os = "linux")]
 use std::os::unix::ffi::OsStrExt;
