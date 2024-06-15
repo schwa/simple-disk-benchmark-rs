@@ -323,7 +323,7 @@ impl RunResult {
 }
 
 impl<'a> Cycle<'a> {
-    fn main(&self, file: &'a Option<File>, buffer: &'a mut Vec<u8>) -> Result<CycleResult> {
+    fn main(&self, file: &'a Option<File>, buffer: &'a mut [u8]) -> Result<CycleResult> {
         let run_options = &self.options.run_options;
         let session_options = &run_options.session_options;
         log::debug!(target: "Session::Run::Cycle", "Starting cycle {}/{}.", self.options.cycle + 1, session_options.cycles);
