@@ -42,11 +42,30 @@ pub struct SessionOptions {
     pub no_random_buffer: bool,
 }
 
+impl SessionOptions {
+    pub fn new(path: &PathBuf, file_size: usize, block_size: usize, cycles: usize) -> Self {
+        SessionOptions {
+            modes: vec![ReadWrite::Read, ReadWrite::Write],
+            path: path.clone(),
+            file_size: file_size,
+            block_size: block_size,
+            cycles: cycles,
+            no_create: false,
+            no_delete: false,
+            dry_run: false,
+            no_progress: false,
+            no_disable_cache: false,
+            random_seek: false,
+            no_close_file: false,
+            no_random_buffer: false
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SessionResult {
     pub args: String,
-    #[serde(with = "time::serde::iso8601")]
-    pub created: time::OffsetDateTime,
+    pub created: std::time::SystemTime,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume: Option<Volume>,
     pub options: SessionOptions,
@@ -130,7 +149,7 @@ impl Session {
         let result = SessionResult {
             args: std::env::args().collect::<Vec<String>>()[1..].join(" "),
             volume: Volume::volume_for_path(&self.options.path).ok(),
-            created: time::OffsetDateTime::now_local()?,
+            created: std::time::SystemTime::now(),
             options: self.options.clone(),
 
             runs: runs_results,
@@ -436,5 +455,19 @@ impl RunStatistics {
             min,
             max,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_session() {
+        let options = SessionOptions::new(&PathBuf::from("./test"), 1024 * 1024, 1024, 2);
+        let session = Session { options };
+        let result = session.main().unwrap();
+        println!("{}", serde_json::to_string_pretty(&result).unwrap());
+
     }
 }
