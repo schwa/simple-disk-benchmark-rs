@@ -97,8 +97,9 @@ linux-setup machine_name:
     # end
 
     orb create -a arm64 ubuntu {{machine_name}}
-    orb run --machine {{machine_name}} sudo apt install gcc
+    orb run --machine {{machine_name}} sudo apt install -y gcc
     orb run --machine {{machine_name}} --shell curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    orb run --machine {{machine_name}} --shell ". $HOME/.cargo/env"
 
 linux-run_ machine_name: (linux-setup machine_name)
     orb run --machine {{machine_name}} cargo clean
