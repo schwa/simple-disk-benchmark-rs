@@ -85,6 +85,7 @@ cargo-installs:
     cargo install toml-cli
     #rustup toolchain install nightly-aarch64-apple-darwin
     cargo install cargo-edit
+    cargo install cargo-machete
 
 linux-setup machine_name:
     #!/usr/bin/env fish
