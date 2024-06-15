@@ -53,18 +53,6 @@ _next-version:
     set NEXT_PATCH (math $PATCH + 1)
     echo "$MAJOR.$MINOR.$NEXT_PATCH"
 
-bump-version:
-    toml set Cargo.toml package.version XXXXX | sponge Cargo.toml
-
-test-opens:
-    cargo build --release
-    rm -f test-1.log
-    rm -f test-2.log
-    ./target/release/simple-disk-benchmark --size 1GB --blocksize 128MB --cycles 10 --mode read --no-progress --no-chart --export-log test-1.log
-    ./target/release/simple-disk-benchmark --size 1GB --blocksize 128MB --cycles 10 --mode read --no-progress --no-chart --export-log test-2.log --no-close-file
-    grep "posix::open" test-1.log | wc -l
-    grep "posix::open" test-2.log | wc -l
-
 bonnieplusplus:
     bonnie++ | bon_csv2html > bonnie++.html
 
@@ -76,29 +64,19 @@ cargo-analytics:
     unused-features build-report --input report.json
     mv report.json docs/unused-features.json
     mv report.html docs/unused-features.html
-    #unused-features prune --input docs/unused-features.json
+    unused-features prune --input docs/unused-features.json
 
 cargo-installs:
-    cargo install cargo-bloat
     brew install cargo-udeps
-    cargo install cargo-unused-features
-    cargo install toml-cli
-    #rustup toolchain install nightly-aarch64-apple-darwin
+    cargo install cargo-bloat
     cargo install cargo-edit
     cargo install cargo-machete
-    rustup component add llvm-tools-preview
+    cargo install cargo-unused-features
     cargo install grcov
+    cargo install toml-cli
+    rustup component add llvm-tools-preview
 
 linux-setup machine_name:
-    #!/usr/bin/env fish
-    # set MACHINE_NAME {{machine_name}}
-    # if orb list --format json | jq -e ".[].name == \"$MACHINE_NAME\""
-    #     echo "Machine already exists"
-    #     exit 1
-    # else
-    #     echo "Machine does not exist. Creating..."
-    # end
-
     orb create -a arm64 ubuntu {{machine_name}}
     orb run --machine {{machine_name}} sudo apt install -y gcc
     orb run --machine {{machine_name}} --shell curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -114,6 +92,7 @@ windows-deps:
     rustup target add x86_64-pc-windows-gnu
 
 windows-build:
+    # TODO: use cross
     cargo build --target x86_64-pc-windows-gnu
 
 coverage:
