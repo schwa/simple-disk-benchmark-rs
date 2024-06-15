@@ -39,6 +39,7 @@ pub struct SessionOptions {
     pub no_disable_cache: bool,
     pub random_seek: bool,
     pub no_close_file: bool,
+    pub no_random_buffer: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -106,6 +107,7 @@ impl Session {
             &self.options.path,
             self.options.file_size,
             self.options.no_create,
+            self.options.no_random_buffer,
         )?;
         drop(file);
 
@@ -154,7 +156,13 @@ impl Session {
         Ok(result)
     }
 
-    pub fn prepare_file(&self, path: &PathBuf, file_size: usize, no_create: bool) -> Result<File> {
+    pub fn prepare_file(
+        &self,
+        path: &PathBuf,
+        file_size: usize,
+        no_create: bool,
+        no_random_buffer: bool,
+    ) -> Result<File> {
         log::debug!(
             target: "Session",
             "Preparing test file {}, size: {}.",
@@ -192,9 +200,42 @@ impl Session {
         );
 
         let (elapsed, result) = measure(|| {
+            log::trace!(
+                target: "Session",
+                "Creating buffer.",
+            );
             let mut buffer = vec![0; file_size];
-            let mut rng = rand::thread_rng();
-            rng.fill_bytes(&mut buffer);
+
+            if !no_random_buffer {
+                log::trace!(
+                    target: "Session",
+                    "Filing random buffer.",
+                );
+                if cfg!(debug_assertions) {
+                    log::warn!("This can take a long time in debug builds. Make sure you're running in a release build.");
+                }
+                let mut rng = rand::thread_rng();
+                rng.fill_bytes(&mut buffer);
+            }
+            else {
+                log::trace!(
+                    target: "Session",
+                    "Filing buffer with pattern.",
+                );
+                // fill buffer with 0xDEADBEEF pattern
+                let mut i = 0;
+                while i < buffer.len() {
+                    let bytes = [0xDE, 0xAD, 0xBE, 0xEF];
+                    let bytes_to_copy = std::cmp::min(bytes.len(), buffer.len() - i);
+                    buffer[i..i + bytes_to_copy].copy_from_slice(&bytes[..bytes_to_copy]);
+                    i += bytes_to_copy;
+                }
+            }
+
+            log::trace!(
+                target: "Session",
+                "Writing buffer.",
+            );
             let bytes_written = file.write(&buffer)?;
             anyhow::ensure!(
                 bytes_written == file_size,

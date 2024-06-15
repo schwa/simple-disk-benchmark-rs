@@ -2,7 +2,10 @@ use anyhow::{ensure, Ok};
 use clap::Parser;
 use clap_verbosity_flag::{Verbosity, WarnLevel};
 use enum_display_derive::Display;
+use fern::colors::{Color, ColoredLevelConfig};
+use humantime::format_duration;
 use minijinja::{context, Environment};
+use std::time::SystemTime;
 use std::{collections::HashSet, fmt::Display, fs::File, path::PathBuf, vec};
 
 mod colored_markup;
@@ -65,6 +68,10 @@ struct Args {
     #[arg(long, default_value_t = false)]
     no_close_file: bool,
 
+    /// Fill the buffer with fixed byte pattern on creation instead of random.
+    #[arg(long, default_value_t = true)]
+    no_random_buffer: bool,
+
     /// Do not display a bar chart of the run timings.
     #[arg(short = 'X', long)]
     no_chart: bool,
@@ -96,7 +103,13 @@ enum Mode {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    setup_logger(args.verbose.log_level_filter(), &args.export_log)?;
+    let start_time = std::time::SystemTime::now();
+
+    setup_logger(
+        args.verbose.log_level_filter(),
+        &args.export_log,
+        start_time,
+    )?;
 
     log::debug!("{:?}", args);
 
@@ -174,6 +187,7 @@ File Size: <size>{{ file_size }}</size>";
         no_disable_cache: args.no_disable_cache,
         random_seek: args.random_seek,
         no_close_file: args.no_close_file,
+        no_random_buffer: args.no_random_buffer,
     };
     let session = Session { options };
     let session_result = session.main().expect("Session failed.");
@@ -257,10 +271,11 @@ fn render(template: &str, context: &minijinja::value::Value) -> anyhow::Result<(
     Ok(())
 }
 
-use fern::colors::{Color, ColoredLevelConfig};
-use std::time::SystemTime;
-
-fn setup_logger(level_filter: log::LevelFilter, log_path: &Option<PathBuf>) -> anyhow::Result<()> {
+fn setup_logger(
+    level_filter: log::LevelFilter,
+    log_path: &Option<PathBuf>,
+    start_time: SystemTime,
+) -> anyhow::Result<()> {
     let colors = ColoredLevelConfig::new()
         .info(Color::Green)
         .debug(Color::Magenta);
@@ -270,8 +285,12 @@ fn setup_logger(level_filter: log::LevelFilter, log_path: &Option<PathBuf>) -> a
     let console_logger = fern::Dispatch::new()
         .level(level_filter)
         .format(move |out, message, record| {
+            let duration = SystemTime::now().duration_since(start_time).unwrap();
+            let duration_string = format!("{:10.3}", duration.as_secs_f64());
+
             out.finish(format_args!(
-                "{:8.8} {:24.24} | {}",
+                "{} {:8.8} {:24.24} | {}",
+                duration_string,
                 colors.color(record.level()),
                 record.target(),
                 message
