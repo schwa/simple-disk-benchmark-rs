@@ -90,31 +90,15 @@ impl Volume {
 
 #[cfg(target_os = "macos")]
 trait StatFSStuff {
-    fn fstype_name(&self) -> String;
     fn mount_on_name(&self) -> String;
-    fn mount_from_name(&self) -> String;
 }
 
 #[cfg(target_os = "macos")]
 impl StatFSStuff for libc::statfs {
-    fn fstype_name(&self) -> String {
-        unsafe {
-            String::from_utf8_lossy(std::ffi::CStr::from_ptr(self.f_fstypename.as_ptr()).to_bytes())
-                .to_string()
-        }
-    }
     fn mount_on_name(&self) -> String {
         unsafe {
             String::from_utf8_lossy(std::ffi::CStr::from_ptr(self.f_mntonname.as_ptr()).to_bytes())
                 .to_string()
-        }
-    }
-    fn mount_from_name(&self) -> String {
-        unsafe {
-            String::from_utf8_lossy(
-                std::ffi::CStr::from_ptr(self.f_mntfromname.as_ptr()).to_bytes(),
-            )
-            .to_string()
         }
     }
 }
