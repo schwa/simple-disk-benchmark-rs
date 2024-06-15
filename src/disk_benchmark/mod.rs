@@ -461,10 +461,15 @@ impl RunStatistics {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn test_session() {
-        let options = SessionOptions::new(&PathBuf::from("./test"), 1024 * 1024, 1024, 2);
+
+        let tmp_dir = tempdir().unwrap();
+        let file_path = tmp_dir.path().join("test.dat");
+
+        let options = SessionOptions::new(&file_path, 1024 * 1024, 1024, 2);
         let session = Session { options };
         let result = session.main().unwrap();
         println!("{}", serde_json::to_string_pretty(&result).unwrap());
