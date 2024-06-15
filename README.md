@@ -56,16 +56,16 @@ On macOS, the file is opened and F_NO_CACHE and F_GLOBAL_NOCACHE are both set on
 
 ## TODO
 
-* Separate file creation from opening for runs.
 * Display volume info in the preamble.
 * Better output -  display timing info as well as rates.
 * Multithreaded benchmarking option.
-* Test on Windows.
 * Put on homebrew.
 * More documentation.
 * Run test coverage.
 * Borrow CPU time stuff from [hyperfine](https://github.com/sharkdp/hyperfine).
 * Fuzz the StyleSheet code.
+* ~~Separate file creation from opening for runs.~~
+* ~~Test on Windows.~~
 * ~~Random seeks instead of just sequential.~~
 * ~~Use random bytes instead of zeros for writes~~
 * ~~Use a better ByteSize replacement.~~
