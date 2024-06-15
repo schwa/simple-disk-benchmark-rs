@@ -42,25 +42,6 @@ pub struct SessionOptions {
     pub no_random_buffer: bool,
 }
 
-impl SessionOptions {
-    pub fn new(path: &PathBuf, file_size: usize, block_size: usize, cycles: usize) -> Self {
-        SessionOptions {
-            modes: vec![ReadWrite::Read, ReadWrite::Write],
-            path: path.clone(),
-            file_size: file_size,
-            block_size: block_size,
-            cycles: cycles,
-            no_create: false,
-            no_delete: false,
-            dry_run: false,
-            no_progress: false,
-            no_disable_cache: false,
-            random_seek: false,
-            no_close_file: false,
-            no_random_buffer: false
-        }
-    }
-}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SessionResult {
@@ -463,10 +444,30 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
+    impl SessionOptions {
+        pub fn new(path: &PathBuf, file_size: usize, block_size: usize, cycles: usize) -> Self {
+            SessionOptions {
+                modes: vec![ReadWrite::Read, ReadWrite::Write],
+                path: path.clone(),
+                file_size: file_size,
+                block_size: block_size,
+                cycles: cycles,
+                no_create: false,
+                no_delete: true,
+                dry_run: false,
+                no_progress: false,
+                no_disable_cache: false,
+                random_seek: false,
+                no_close_file: false,
+                no_random_buffer: false
+            }
+        }
+    }
+
     #[test]
     fn test_session() {
-
         let tmp_dir = tempdir().unwrap();
+        std::fs::create_dir_all(&tmp_dir).unwrap();
         let file_path = tmp_dir.path().join("test.dat");
 
         let options = SessionOptions::new(&file_path, 1024 * 1024, 1024, 2);
