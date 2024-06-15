@@ -9,7 +9,6 @@ mod colored_markup;
 mod disk_benchmark;
 mod support;
 mod timer;
-mod util;
 mod volume;
 
 use colored_markup::*;
