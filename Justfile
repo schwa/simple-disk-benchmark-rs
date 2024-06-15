@@ -86,6 +86,8 @@ cargo-installs:
     #rustup toolchain install nightly-aarch64-apple-darwin
     cargo install cargo-edit
     cargo install cargo-machete
+    rustup component add llvm-tools-preview
+    cargo install grcov
 
 linux-setup machine_name:
     #!/usr/bin/env fish
@@ -113,3 +115,7 @@ windows-deps:
 
 windows-build:
     cargo build --target x86_64-pc-windows-gnu
+
+coverage:
+    set -x RUSTFLAGS "-C instrument-coverage"; cargo build
+    cargo test

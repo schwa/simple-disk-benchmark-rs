@@ -7,3 +7,4 @@ docs/unused-features.html
 test-*.log
 test.json
 testfile.dat
+*.profraw
