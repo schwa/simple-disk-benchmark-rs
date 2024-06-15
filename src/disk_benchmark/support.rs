@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{Ok, Result};
 use std::fs::File;
 use std::path::Path;
 
@@ -142,6 +142,9 @@ impl DiskBenchmark for File {
 }
 
 // MARK: Linux
+
+#[cfg(target_os = "windows")]
+use anyhow::anyhow;
 
 #[cfg(target_os = "windows")]
 impl DiskBenchmark for File {

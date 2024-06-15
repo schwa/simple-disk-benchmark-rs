@@ -1,4 +1,4 @@
-name: Rust
+name: MacOS
 
 on:
   push:
@@ -12,15 +12,6 @@ env:
 jobs:
   build-macos:
     runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build
-        run: cargo build --verbose
-      - name: Run tests
-        run: cargo test --verbose
-
-  build-ubuntu:
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build
