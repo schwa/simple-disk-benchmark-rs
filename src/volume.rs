@@ -102,7 +102,7 @@ pub struct Volume {}
 #[cfg(target_os = "linux")]
 impl Volume {
     pub fn volume_for_path(_: &PathBuf) -> anyhow::Result<Self> {
-        return Err(anyhow::anyhow!("Not implemented."));
+        Err(anyhow::anyhow!("Not implemented."))
     }
 }
 
