@@ -3,7 +3,7 @@ use clap::Parser;
 use clap_verbosity_flag::{Verbosity, WarnLevel};
 use enum_display_derive::Display;
 use fern::colors::{Color, ColoredLevelConfig};
-use humantime::format_duration;
+
 use minijinja::{context, Environment};
 use std::time::SystemTime;
 use std::{collections::HashSet, fmt::Display, fs::File, path::PathBuf, vec};

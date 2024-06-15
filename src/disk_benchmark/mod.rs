@@ -216,8 +216,7 @@ impl Session {
                 }
                 let mut rng = rand::thread_rng();
                 rng.fill_bytes(&mut buffer);
-            }
-            else {
+            } else {
                 log::trace!(
                     target: "Session",
                     "Filing buffer with pattern.",
