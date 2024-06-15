@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
-use std::os::unix::prelude::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+
+#[cfg(target_os = "macos")]
+use std::os::unix::prelude::OsStrExt;
 
 #[cfg(target_os = "macos")]
 #[derive(Serialize, Deserialize, Debug)]
@@ -71,23 +73,6 @@ impl Volume {
     }
 }
 
-// #[cfg(target_os = "macos")]
-// fn deserialize_yes_or_no<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
-//     // if let Ok(b) = bool::deserialize(deserializer) {
-//     //     Ok(b)
-//     // } else {
-//     let s = String::deserialize(deserializer)?;
-//     match s.as_str() {
-//         "yes" => Ok(true),
-//         "no" => Ok(false),
-//         _ => Err(serde::de::Error::custom(format!(
-//             "Expected Yes or No, got {}",
-//             s
-//         ))),
-//         // }
-//     }
-// }
-
 #[cfg(target_os = "macos")]
 trait StatFSStuff {
     fn mount_on_name(&self) -> String;
@@ -103,13 +88,29 @@ impl StatFSStuff for libc::statfs {
     }
 }
 
-// MARK: -
+// MARK: Linux
+
+#[cfg(target_os = "linux")]
+use std::os::unix::prelude::OsStrExt;
 
 #[cfg(target_os = "linux")]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Volume {}
 
 #[cfg(target_os = "linux")]
+impl Volume {
+    pub fn volume_for_path(_: &PathBuf) -> anyhow::Result<Self> {
+        return Err(anyhow::anyhow!("Not implemented."));
+    }
+}
+
+// MARK: Windows
+
+#[cfg(target_os = "windows")]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Volume {}
+
+#[cfg(target_os = "windows")]
 impl Volume {
     pub fn volume_for_path(_: &PathBuf) -> anyhow::Result<Self> {
         return Err(anyhow::anyhow!("Not implemented."));

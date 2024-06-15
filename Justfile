@@ -107,3 +107,9 @@ linux-run_ machine_name: (linux-setup machine_name)
     orb run --machine {{machine_name}} cargo build
 
 linux-run: (linux-run_ "ubuntu")
+
+windows-deps:
+    rustup target add x86_64-pc-windows-gnu
+
+windows-build:
+    cargo build --target x86_64-pc-windows-gnu
