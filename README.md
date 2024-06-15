@@ -6,9 +6,18 @@ A simple disk benchmark tool.
 
 ## Operating Systems
 
-Currently, macOS and Linux are tested. Windows _may_ work but is not tested. Development is on macOS.
+Currently, macOS and Linux are tested. Windows support is limited, unit tests pass, but the software is not otherwise tested or validated on Windows. Development is on macOS.
 
 ## Installation
+
+From homebrew:
+
+```sh
+brew tap schwa/schwa
+brew install simple-disk-benchmark
+```
+
+Or with cargo:
 
 ```sh
 cargo install simple-disk-benchmark
