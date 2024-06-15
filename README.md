@@ -10,14 +10,14 @@ Currently, macOS and Linux are tested. Windows support is limited, unit tests pa
 
 ## Installation
 
-From homebrew:
+From homebrew (macOS only):
 
 ```sh
 brew tap schwa/schwa
 brew install simple-disk-benchmark
 ```
 
-Or with cargo:
+Or with cargo (all platforms):
 
 ```sh
 cargo install simple-disk-benchmark
@@ -68,11 +68,11 @@ On macOS, the file is opened and F_NO_CACHE and F_GLOBAL_NOCACHE are both set on
 * Display volume info in the preamble.
 * Better output -  display timing info as well as rates.
 * Multithreaded benchmarking option.
-* Put on homebrew.
 * More documentation.
 * Run test coverage.
 * Borrow CPU time stuff from [hyperfine](https://github.com/sharkdp/hyperfine).
 * Fuzz the StyleSheet code.
+* ~~Put on homebrew~~.
 * ~~Separate file creation from opening for runs.~~
 * ~~Test on Windows.~~
 * ~~Random seeks instead of just sequential.~~
