@@ -149,8 +149,12 @@ use anyhow::anyhow;
 #[cfg(target_os = "windows")]
 impl DiskBenchmark for File {
     fn create_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
-        // TODO: Implement this.
-        Err(anyhow!("unimplemented"))
+        File::options()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(&path)
+            .map_err(|e| e.into())
     }
 
     fn open_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
