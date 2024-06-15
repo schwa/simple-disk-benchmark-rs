@@ -7,7 +7,7 @@ use std::{
     fmt::Display,
     fs::File,
     io::{Read, Seek, Write},
-    path::{PathBuf},
+    path::PathBuf,
     vec,
 };
 
