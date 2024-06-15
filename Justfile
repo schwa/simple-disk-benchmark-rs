@@ -31,6 +31,8 @@ publish:
     gum confirm "git push?"; and git push --tags origin main
     gum confirm "Rust publish"; and cargo publish
 
+    gum confirm "Update homebrew?"; and just homebrew-release $NEXT_VERSION:
+
 _check-repo:
     #!/usr/bin/env fish
     set is_dirty (git status --porcelain)
