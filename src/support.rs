@@ -108,10 +108,7 @@ impl From<DataSize<usize>> for usize {
 #[test]
 fn test_1() {
     let make = |size: usize, unit: Unit| -> usize {
-        let d = DataSize {
-            size,
-            unit,
-        };
+        let d = DataSize { size, unit };
         d.into()
     };
     assert_eq!(make(1, Unit::B), 1);
