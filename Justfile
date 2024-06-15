@@ -119,3 +119,30 @@ windows-build:
 coverage:
     set -x RUSTFLAGS "-C instrument-coverage"; cargo build
     cargo test
+
+homebrew-release VERSION:
+    #!/usr/bin/env fish
+    # https://federicoterzi.com/blog/how-to-publish-your-rust-project-on-homebrew/
+
+    set VERSION {{VERSION}}
+    echo $VERSION
+
+    # Build release, create tarball and calculate sha256
+    cargo build --release
+    pushd target/release/
+    tar -czf simple-disk-benchmark.tar.gz simple-disk-benchmark
+    set SHA (shasum -a 256 simple-disk-benchmark.tar.gz | cut -d " " -f 1)
+    echo $SHA
+    popd
+
+    # Create release on GitHub
+    gh release create $VERSION target/release/simple-disk-benchmark.tar.gz --title "simple-disk-benchmark $VERSION"
+
+    # Update homebrew formula
+    pushd $HOME/Projects/homebrew-schwa
+    git pull
+    sed -i '' -e "s/sha256 \".*\"/sha256 \"$SHA\"/g" Formula/simple-disk-benchmark.rb
+    sed -i '' -e "s/version \".*\"/version \"$VERSION\"/g" Formula/simple-disk-benchmark.rb
+    git commit --all --message "simple-disk-benchmark $VERSION"
+    git push
+    popd
