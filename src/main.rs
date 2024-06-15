@@ -1,12 +1,11 @@
-use anyhow::{ensure, Ok};
-use clap::Parser;
+use anyhow::{ensure, Ok, Result};
 use clap_verbosity_flag::{Verbosity, WarnLevel};
+use clap::Parser;
 use enum_display_derive::Display;
 use fern::colors::{Color, ColoredLevelConfig};
-
 use minijinja::{context, Environment};
-use std::time::SystemTime;
 use std::{collections::HashSet, fmt::Display, fs::File, path::PathBuf, vec};
+use std::time::SystemTime;
 
 mod colored_markup;
 mod disk_benchmark;
@@ -99,10 +98,10 @@ enum Mode {
     Write,
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
-    let start_time = std::time::SystemTime::now();
+    let start_time = SystemTime::now();
 
     setup_logger(
         args.verbose.log_level_filter(),
@@ -249,7 +248,7 @@ Min: <speed>{{min}}</speed>/sec, Max: <speed>{{max}}</speed>/sec";
     }
 }
 
-fn render(template: &str, context: &minijinja::value::Value) -> anyhow::Result<()> {
+fn render(template: &str, context: &minijinja::value::Value) -> Result<()> {
     let style_sheet = StyleSheet::parse(
         "
         info { foreground: yellow }
@@ -274,19 +273,16 @@ fn setup_logger(
     level_filter: log::LevelFilter,
     log_path: &Option<PathBuf>,
     start_time: SystemTime,
-) -> anyhow::Result<()> {
+) -> Result<()> {
     let colors = ColoredLevelConfig::new()
         .info(Color::Green)
         .debug(Color::Magenta);
-
     let mut base_logger = fern::Dispatch::new();
-
     let console_logger = fern::Dispatch::new()
         .level(level_filter)
         .format(move |out, message, record| {
             let duration = SystemTime::now().duration_since(start_time).unwrap();
             let duration_string = format!("{:10.3}", duration.as_secs_f64());
-
             out.finish(format_args!(
                 "{} {:8.8} {:24.24} | {}",
                 duration_string,
@@ -320,7 +316,6 @@ fn setup_logger(
 
 #[cfg(test)]
 mod tests {
-
     use assert_cmd::Command;
 
     #[test]
