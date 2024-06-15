@@ -322,7 +322,7 @@ mod tests {
     fn test_cli() {
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
         let output = cmd
-            .args(["--size", "1MB", "--blocksize", "64KB", "--no-chart"])
+            .args(["--size", "1MB", "--blocksize", "64KB", "--no-chart", "--no-progress"])
             .unwrap();
         println!("{:?}", output);
     }

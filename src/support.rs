@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use core::fmt::{Debug, Display};
 use num_traits::{Num, NumCast};
 use serde::{Deserialize, Serialize};
-use strum::*;
+use strum::{EnumIter, Display, IntoEnumIterator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, EnumIter, Display)]
 pub enum Unit {
@@ -38,12 +38,6 @@ where
     pub size: N,
     pub unit: Unit,
 }
-
-// impl DataSize<u64> {
-//     fn bytes_u64(self) -> u64 {
-//         self.size * self.unit.bytes()
-//     }
-// }
 
 impl<N: Num> DataSize<N> {
     pub fn new(size: N, unit: Unit) -> Self {
