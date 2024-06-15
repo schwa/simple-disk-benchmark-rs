@@ -1,4 +1,4 @@
-use anyhow::{Ok, Result};
+use anyhow::{Ok, Result, anyhow};
 use std::fs::File;
 use std::os::fd::{AsRawFd, FromRawFd};
 use std::os::unix::ffi::OsStrExt;
@@ -24,7 +24,7 @@ pub trait DiskBenchmark {
 impl DiskBenchmark for File {
     fn create_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
         // TODO: Implement this.
-        Err(())
+        Err(anyhow!("unimplemented"))
     }
 
     fn open_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
