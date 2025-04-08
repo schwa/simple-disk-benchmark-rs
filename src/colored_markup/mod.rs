@@ -157,7 +157,7 @@ fn test_stylesheet() {
     );
 }
 
-impl<'a> StyleSheet<'a> {
+impl StyleSheet<'_> {
     fn parse_template(t: &str) -> Vec<Part> {
         lazy_static! {
             static ref REGEX: Regex = Regex::new(

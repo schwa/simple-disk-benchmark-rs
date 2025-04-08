@@ -256,7 +256,7 @@ impl Session {
     }
 }
 
-impl<'a> Run<'a> {
+impl Run<'_> {
     pub fn main(&self) -> Result<RunResult> {
         log::debug!(target: "Session::Run", "Starting run.");
         let session_options = &self.options.session_options;
