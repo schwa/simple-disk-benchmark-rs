@@ -21,6 +21,9 @@ pub trait DiskBenchmark {
 // MARK: MacOS
 
 #[cfg(target_os = "macos")]
+use std::ffi::CString;
+
+#[cfg(target_os = "macos")]
 use std::os::fd::{AsRawFd, FromRawFd};
 
 #[cfg(target_os = "macos")]
@@ -30,13 +33,10 @@ use std::os::unix::ffi::OsStrExt;
 impl DiskBenchmark for File {
     fn create_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
         log::debug!("Creating using posix::open");
+        let c_path = CString::new(path.as_os_str().as_bytes())?;
         let file = unsafe {
             let oflags = libc::O_CREAT | libc::O_RDWR;
-            let fd = libc::open(
-                path.as_os_str().as_bytes().as_ptr() as *const libc::c_char,
-                oflags,
-                0o644,
-            );
+            let fd = libc::open(c_path.as_ptr(), oflags, 0o644);
             if fd == -1 {
                 return Err(std::io::Error::last_os_error().into());
             }
@@ -50,13 +50,10 @@ impl DiskBenchmark for File {
 
     fn open_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
         log::debug!("Opening using posix::open");
+        let c_path = CString::new(path.as_os_str().as_bytes())?;
         let file = unsafe {
             let oflags = libc::O_RDWR;
-            let fd = libc::open(
-                path.as_os_str().as_bytes().as_ptr() as *const i8,
-                oflags,
-                0o644,
-            );
+            let fd = libc::open(c_path.as_ptr(), oflags, 0o644);
             if fd == -1 {
                 return Err(std::io::Error::last_os_error().into());
             }
@@ -89,6 +86,9 @@ impl DiskBenchmark for File {
 // MARK: Linux
 
 #[cfg(target_os = "linux")]
+use std::ffi::CString;
+
+#[cfg(target_os = "linux")]
 use std::os::fd::FromRawFd;
 
 #[cfg(target_os = "linux")]
@@ -98,13 +98,10 @@ use std::os::unix::ffi::OsStrExt;
 impl DiskBenchmark for File {
     fn create_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
         log::debug!("Creating using posix::open");
+        let c_path = CString::new(path.as_os_str().as_bytes())?;
         let file = unsafe {
             let oflags = libc::O_CREAT | libc::O_RDWR;
-            let fd = libc::open(
-                path.as_os_str().as_bytes().as_ptr() as *const libc::c_char,
-                oflags,
-                0o644,
-            );
+            let fd = libc::open(c_path.as_ptr(), oflags, 0o644);
             if fd == -1 {
                 return Err(std::io::Error::last_os_error().into());
             }
@@ -118,17 +115,14 @@ impl DiskBenchmark for File {
 
     fn open_for_benchmarking(path: &Path, no_disable_cache: bool) -> Result<File> {
         log::debug!("Opening using posix::open");
+        let c_path = CString::new(path.as_os_str().as_bytes())?;
         unsafe {
             let mut oflags = libc::O_RDWR;
             if !no_disable_cache {
                 oflags |= libc::O_DIRECT;
             }
 
-            let fd = libc::open(
-                path.as_os_str().as_bytes().as_ptr() as *const libc::c_char,
-                oflags,
-                0o644,
-            );
+            let fd = libc::open(c_path.as_ptr(), oflags, 0o644);
             if fd == -1 {
                 return Err(std::io::Error::last_os_error().into());
             }
